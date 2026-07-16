@@ -1,6 +1,10 @@
+import type { paths } from "@pindou/contracts";
+
 import { decodeApiError } from "./errors";
 
 const API_BASE = "/api/v1";
+
+export type ApiPaths = paths;
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
