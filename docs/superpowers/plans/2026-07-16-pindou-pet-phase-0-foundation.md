@@ -6,12 +6,12 @@
 
 **Architecture:** FastAPI 应用工厂和 React SPA 各自独立启动，根目录用 pnpm workspace 和 Makefile 统一命令。FastAPI/Pydantic 生成的 OpenAPI 是公共 JSON 唯一事实源；TypeScript 类型由它生成。Phase 0 只创建 SQLite、存储、队列和 Provider 的协议及 fake，不调用真实 AI，不实现业务页面。
 
-**Tech Stack:** Python 3.12、FastAPI、Pydantic v2、SQLAlchemy 2、Alembic、pytest；Node.js 24 LTS、pnpm、React 19、TypeScript、Vite、Vitest、Testing Library；CI 使用 GitHub Actions 和 Redis 7 service。
+**Tech Stack:** uv、Python 3.12、FastAPI、Pydantic v2、SQLAlchemy 2、Alembic、pytest；Node.js 24 LTS、pnpm、React 19、TypeScript、Vite、Vitest、Testing Library；CI 使用 GitHub Actions 和 Redis 7 service。
 
 ## Global Constraints
 
 - 先确认 Python 3.12、Node 24 LTS 和 pnpm 可用。当前机器上的 Node 25／Python 3.13 只能用于阅读，不能作为本项目冻结运行时。
-- Python 虚拟环境固定为根目录 `.venv`；所有计划命令用 `.venv/bin/python`。
+- Python 版本由 `.python-version` 固定为 3.12；uv 从 `pyproject.toml` 生成并严格使用提交进 Git 的 `uv.lock`，虚拟环境固定为根目录 `.venv`。所有计划命令用 `.venv/bin/python`，不使用裸 `pip install` 改写环境。
 - 只提交 `pnpm-lock.yaml`，禁止产生 `package-lock.json` 或 npm workspace 配置。
 - 公共 JSON 字段使用 camelCase；Python 域模型使用 snake_case，通过 Pydantic alias generator 转换。
 - 任何任务运行 `make contracts` 都必须同时提交 `packages/contracts/openapi.json` 与 `packages/contracts/src/generated.ts`，提交命令统一使用 `git add packages/contracts`；后续计划只列 generated 文件时仍受此规则约束。
@@ -31,6 +31,7 @@
 - Create: `.python-version`
 - Create: `.nvmrc`
 - Create: `pyproject.toml`
+- Create: `uv.lock`
 - Create: `package.json`
 - Create: `pnpm-workspace.yaml`
 - Create: `Makefile`
@@ -60,10 +61,8 @@ def test_runtime_and_private_paths_are_declared() -> None:
 - [ ] 运行：
 
 ```bash
-python3.12 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install pytest
-.venv/bin/python -m pytest apps/api/tests/test_repository_layout.py -q
+uv run --isolated --python 3.12 --with pytest \
+  pytest apps/api/tests/test_repository_layout.py -q
 ```
 
 Expected: FAIL，指出 `.python-version`、`.nvmrc` 或根配置不存在；失败原因不是导入错误。
@@ -97,6 +96,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "httpx2>=2,<3",
   "pytest>=8.3,<10",
   "pytest-cov>=6,<8",
   "ruff>=0.9,<1",
@@ -174,7 +174,7 @@ PY := .venv/bin/python
 
 .PHONY: install test lint typecheck build contracts contracts-check check
 install:
-	$(PY) -m pip install -e '.[dev]'
+	uv sync --frozen --extra dev
 	pnpm install --frozen-lockfile
 
 test:
@@ -206,13 +206,15 @@ check: lint contracts-check test typecheck build
 - [ ] 运行：
 
 ```bash
-.venv/bin/python -m pip install -e '.[dev]'
+.venv/bin/python --version
+uv lock
+uv sync --frozen --extra dev
 corepack enable
 pnpm install
 .venv/bin/python -m pytest apps/api/tests/test_repository_layout.py -q
 ```
 
-Expected: `1 passed`；根目录产生 `pnpm-lock.yaml`，没有 `package-lock.json`。
+Expected: Python 输出 `3.12.x` 且 `1 passed`；根目录产生 `uv.lock` 与 `pnpm-lock.yaml`，没有 `package-lock.json`。
 
 - [ ] 运行：
 
@@ -226,7 +228,7 @@ Expected: 只出现本 Task 列出的新文件；`git diff --check` 无输出。
 - [ ] 提交：
 
 ```bash
-git add .gitignore .env.example .python-version .nvmrc pyproject.toml package.json pnpm-workspace.yaml pnpm-lock.yaml Makefile README.md apps/api
+git add .gitignore .env.example .python-version .nvmrc pyproject.toml uv.lock package.json pnpm-workspace.yaml pnpm-lock.yaml Makefile README.md apps/api
 git commit -m "chore: establish pinned monorepo foundation"
 ```
 
@@ -700,14 +702,15 @@ jobs:
           --health-retries 10
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: {version: "0.11.29", enable-cache: true}
       - uses: actions/setup-python@v5
-        with: {python-version: "3.12", cache: pip}
+        with: {python-version: "3.12"}
       - uses: pnpm/action-setup@v4
         with: {version: 11.9.0}
       - uses: actions/setup-node@v4
         with: {node-version: "24", cache: pnpm}
-      - run: python -m venv .venv
-      - run: .venv/bin/python -m pip install -e '.[dev]'
+      - run: uv sync --frozen --extra dev
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @pindou/web exec playwright install --with-deps chromium
       - run: mkdir -p var
@@ -715,7 +718,7 @@ jobs:
       - run: RUN_REDIS_TESTS=1 PINDOU_REDIS_URL=redis://127.0.0.1:6379/15 make check
 ```
 
-- [ ] `README.md` 记录精确启动命令、真实 Redis 要求、私有数据边界和“不支持 Phase 1 前继续完整页面”的门禁；clean-checkout 步骤在 `pnpm install --frozen-lockfile` 后显式运行 `pnpm --filter @pindou/web exec playwright install chromium`，不得依赖机器上已有的浏览器缓存。
+- [ ] `README.md` 记录精确启动命令、真实 Redis 要求、私有数据边界和“不支持 Phase 1 前继续完整页面”的门禁；clean-checkout 步骤先运行 `uv python install 3.12` 与 `uv sync --frozen --extra dev`，并在 `pnpm install --frozen-lockfile` 后显式运行 `pnpm --filter @pindou/web exec playwright install chromium`，不得依赖机器上已有的 Python、包缓存或浏览器缓存。
 
 ### Step 3：运行 Phase 0 出口验证
 
@@ -750,7 +753,7 @@ git commit -m "ci: enforce contracts tests and builds"
 
 ## Phase 0 Completion Gate
 
-- [ ] 从干净检出按照 README 建立 Python 3.12 环境并执行 `pnpm install --frozen-lockfile`。
+- [ ] 从干净检出按照 README 运行 `uv sync --frozen --extra dev` 建立 Python 3.12 `.venv`，并执行 `pnpm install --frozen-lockfile`。
 - [ ] `make contracts-check` 能发现并拒绝未生成的 API 变更。
 - [ ] fake Provider 证明幂等查询合同，队列合同证明载荷只含 ID。
 - [ ] SQLite 迁移达到 head，WAL／外键已启用，原子存储测试通过。
