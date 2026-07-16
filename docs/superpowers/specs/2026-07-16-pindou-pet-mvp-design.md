@@ -1,6 +1,7 @@
 # 拼豆虚拟宠物 Web MVP 设计规格
 
-状态：已完成逐段讨论，待书面审阅  
+状态：已批准并冻结为 Web MVP 实施基线
+
 日期：2026-07-16  
 首版形态：产品演示优先的 Web 应用
 
@@ -38,6 +39,7 @@
 - 一套冻结的真实拼豆品牌／系列色板，不提供用户品牌切换。品牌是部署配置而不是用户选项；正式验收前必须冻结品牌、系列、色板来源、版本和文件校验和。
 - 6–8 个角色图层、五个基础动作、网页互动。
 - 中立姿势的 PNG、PDF、颜色编号和豆子数量导出。
+- 匿名项目在移动创建、桌面精修和移动互动之间进行一次性、串行的所有权交接；任一时刻只允许一个浏览器拥有项目。
 - 正式验收集为 5 只猫，覆盖纯色、橘猫、狸花、奶牛猫以及长／短毛差异；扩展报告再增加至 10 只。
 
 ### 3.2 首版不包含
@@ -47,7 +49,7 @@
 - 行走、转身、复杂表情和复杂骨骼动画。
 - AR 放置、小程序、原生 App。
 - 投喂、心情值、成长、房间、社交等养成玩法。
-- 账号、支付、跨设备同步和公众规模运营。
+- 账号、支付、并行跨设备同步、多人协作和公众规模运营；首版只有单 owner 的一次性串行交接，不做状态合并。
 - 多拼豆品牌自由切换。
 
 原始课题描述中的移动端 CPU 50ms、逐帧风格化 500ms 和 AR 15fps 指标不适用于本 Web MVP；它们只能在未来移动端／AR 阶段重新定义和实测。
@@ -131,6 +133,14 @@
 
 逐豆编辑器支持画笔、橡皮、填充、吸管、撤销／重做、缩放和平移，并即时显示实体制作风险。
 
+### 4.5 匿名项目的跨设备交接
+
+首版不建立账号，也不让两个设备同时编辑同一项目。若用户从手机创建、到桌面精修、再回手机互动，执行两次串行所有权交接：手机生成一次性交接链接，桌面领取后成为唯一 owner；桌面批准角色后再生成新链接，原手机浏览器领取后重新成为唯一 owner。交接只传递服务端已经持久化的项目状态和资产，未上传的本地照片、未保存的画笔内容和未提交表单不会跨设备传递。
+
+交接令牌由 32 个加密安全随机字节生成并使用 base64url 表示，服务端只保存 SHA-256 摘要；令牌 10 分钟到期且只能领取一次。同一项目签发新令牌时原子撤销此前所有未领取令牌。链接固定为同源 `/handoff#<token>`：令牌只位于 URL fragment，落地页不得加载第三方脚本或分析代码；页面先读取令牌并立即用 `history.replaceState` 清除 fragment，再通过同源 POST body 提交。令牌不得进入 query、path、访问日志、浏览器存储、历史记录或验收证据；页面和响应使用 `Cache-Control: no-store` 与 `Referrer-Policy: no-referrer`。
+
+接收页面先通过不携带交接令牌的同源 bootstrap 建立并确认自己的匿名 HttpOnly 会话，收到 Cookie 后才发起领取；因此领取响应丢失不会把项目绑定到浏览器拿不到的凭证。领取在一个写事务中校验令牌摘要、10 分钟边界、签发者仍为当前 owner、项目未删除且未到有效保留期限，并原子消费令牌、撤销同项目其他令牌、将项目 owner 替换为接收浏览器会话；已到期限的项目在同一事务内进入删除流程，不能通过交接复活。有效期内领取成功视为新 owner 的一次用户活动，但不得移动未批准项目自创建起 7 天的硬上限。同一原始令牌仅允许已记录的 `claimedBySession` 在其仍是当前 owner 时幂等重放并取回同一项目，其他会话重放或项目后来再次交接后重放均返回 404。页面在领取确认前只在内存中保留令牌并对网络错误自动重试，不写任何浏览器存储。若领取提交后页面崩溃、刷新或关闭而内存令牌丢失，接收浏览器仍可通过仅列出当前匿名会话所拥有项目的 `GET /projects` 找回它；旧 owner 的列表同时移除它。领取不改变内容 `revision`，也不中断运行中的生成任务。领取成功后新 owner 能从 `currentStep` 继续并读取全部已持久化内容；旧 owner 对该项目的 item-scoped GET、上传、保存、生成、媒体、删除和导出请求统一返回 404。会话级 `GET /projects` 仍返回 200，但不得包含已交接项目或泄露其他 owner 的数量。旧 `BrowserSession` 本身不撤销，因此它可以在未来收到新令牌后重新领取项目；旧端 UI 清除最近项目入口并显示“项目已交接”。所有 owner 写操作都必须在同一写事务内重查所有权，不能让旧端在领取完成后提交先前通过鉴权的写入。
+
 ## 5. 角色资产模型
 
 ### 5.1 唯一事实源
@@ -149,12 +159,14 @@ project:
   gridHeight = 58
   boardSize = 29
   activeAssetVersion
+  currentGenerationJobId | null
 
 draftAsset:
   revision
   sourceHash
   paletteManifest
   quantizerManifest
+  selectedColorIds[]
   sourceLayers[]
   beadLayers[]
   variantGroups[]
@@ -166,6 +178,7 @@ approvedAssetVersion:
   canonicalAssetHash
   paletteManifest { brand, series, version, sourceChecksum, pegPitchMm, colors[] }
   quantizerManifest { version, colorSpace, whitePoint, distanceFormula, tieBreakRule, maxColors }
+  selectedColorIds[]
   sourceLayers[]
   beadLayers[]
   variantGroups[]
@@ -173,15 +186,25 @@ approvedAssetVersion:
 
 sourceLayer:
   id
-  parentId | null
+  nodeId
+  logicalGroup
+  parentNodeId | null
   zIndex
+  physicalExport: boolean
+  variantGroupId | null
+  variantId | null
+  pivotGlobal { x, y }
+  neutralTransform = identity
   imageContentHash
   maskContentHash
   completionMaskHash | null
 
 beadLayer:
   id
-  parentId | null
+  nodeId
+  logicalGroup
+  sourceLayerId
+  parentNodeId | null
   zIndex
   pivotGlobal { x, y }
   physicalExport: boolean
@@ -192,13 +215,16 @@ beadLayer:
 
 variantGroup:
   id
+  targetNodeId
   neutralVariantId
-  layerIds[]
+  variantIds[]
 
 animation:
   name
   durationMs
-  tracks[layerId][] { timeMs, dx, dy, rotationDeg, easing }
+  tracks[]:
+    - { kind: transform, targetNodeId, keyframes[] { timeMs, dx, dy, rotationDeg, easing } }
+    - { kind: variant_visibility, targetNodeId, variantGroupId, keyframes[] { timeMs, variantId } }
   exportable = false
 
 neutralMatrix:
@@ -208,7 +234,7 @@ neutralMatrix:
 
 所有豆格和枢轴均使用中立姿势下的全局网格坐标，原点在 58×58 左上角，`x` 向右、`y` 向下，单位为一格。旋转角度以顺时针为正。父变换先于子变换应用；动画数据不允许缩放。所有豆格必须在 58×58 内，同一图层同一格最多一颗豆，所有同时可见的图层必须具有唯一 `zIndex`。透明格和白色豆是不同状态。父子图层关系必须无环；眼睛跟随头部，头、前爪和尾巴跟随身体。
 
-中立变体由 `variantGroup.neutralVariantId` 明确指定；眼睛组的中立变体是睁眼层。规范化资产 JSON 使用 UTF-8、字典键排序和稳定数组顺序。`canonicalAssetHash` 覆盖高清／拼豆层、动作、完整色板清单和量化清单，但不包含派生预览文件。色差并列时按 `colorId` 升序选择。每个导出包使用 `canonicalAssetHash + rendererVersion` 作为缓存键并记录二者，渲染器升级不会静默改写旧导出。
+`nodeId` 是高清层、拼豆层和动画轨道之间稳定且相同的绑定标识；`variantId` 是同一节点各视觉变体的稳定标识。中立变体由 `variantGroup.neutralVariantId` 明确指定，且 `targetNodeId` 指向被切换的节点；眼睛组的中立变体是睁眼层。`selectedColorIds` 在量化前为空，量化后及批准版为 1–32 个唯一、升序、属于冻结色板的色号，所有拼豆格必须属于该集合。规范化资产 JSON 使用 UTF-8、字典键排序和稳定数组顺序。`canonicalAssetHash` 覆盖高清／拼豆层、动作、完整色板清单、量化清单和 `selectedColorIds`，但不包含派生预览文件。色差并列时按 `colorId` 升序选择。每个导出包使用 `projectId + canonicalAssetHash + rendererVersion` 作为项目隔离的缓存键并记录后三者，任何缓存读取／返回前都重新验证当前 owner，渲染器升级不会静默改写旧导出。
 
 数字动画舞台不是 58×58 的硬裁剪框。舞台在角色网格外保留运动留白，但任何实体导出都只读取 58×58 中立姿势。
 
@@ -320,7 +346,7 @@ SQLite + 私有文件目录 = 持久状态与资产
 3. 互动房间：待机和五个动作。
 4. 实体导出：制作风险、四块底板、颜色统计、PNG 和 PDF。
 
-首版不做账号。匿名项目通过随机签名会话访问，并在当前浏览器保存最近项目入口。
+首版不做账号。匿名项目通过随机签名会话访问；服务端只向该会话列出其当前拥有且未删除的项目摘要，浏览器本地“最近项目”只是可重建的快捷入口。同一项目可通过 4.5 定义的一次性交接切换 owner，但不允许并行访问或冲突合并。
 
 高清图层和逐豆编辑器只承诺桌面浏览器，验收视口不小于 1280×800。创建页、进度、互动房间和导出预览支持桌面与移动浏览器；移动端首版不承担精细画笔编辑。
 
@@ -357,7 +383,7 @@ SegmentationProvider:
   segment(image, partLabels, pointOrBoxPrompts) -> normalizedPartMasks
 ```
 
-首版生成 Provider 必须支持确定性幂等键，或支持使用客户端提交键查询既有任务；不满足该条件的供应商不得进入 MVP。合同必须覆盖三张参考图、身份约束、固定姿势、遮罩局部重绘和可固定随机种子的能力。具体供应商可以替换，但进入产品验证的模型名称、版本号、请求参数和留存政策必须冻结并记录。
+首版生成 Provider 必须同时原生接收客户端确定性幂等键，并能使用同一键查询既有任务；缺少任一能力的供应商不得进入 MVP。合同还必须覆盖三张参考图、身份约束、固定姿势、遮罩局部重绘和可固定随机种子的能力。具体供应商可以替换，但进入产品验证的模型名称、版本号、请求参数和留存政策必须冻结并记录。
 
 首版分割在 Worker 内使用固定版本的本地确定性模型，并按输入哈希保存检查点，不产生远程计费提交。若未来改为远程分割服务，必须先为它补齐与 `GenerationProvider` 相同的幂等键、任务查询和对账合同。
 
@@ -394,12 +420,14 @@ UPLOADED -> PROCESSING -> LAYER_REVIEW -> BEAD_REVIEW -> READY
 - 接收后立即解码、纠正方向、移除 EXIF，存储名使用随机 ID，不保留原文件名。
 - 原始照片创建时即写入 `expiresAt = createdAt + 24h`，不因项目成功、失败、取消、关闭浏览器或停留在审核页而改变。
 - 未确认的生成中间物在最后一次项目活动 24 小时后删除，且从创建起最长保留 7 天。
+- 编辑器中尚未提交的掩码 staging 最长保留 1 小时；被局部重生成任务消费后只保留到该任务终态及清理完成。
 - 已确认的资产包默认保留至最后访问后 180 天；每次有效访问重新计算期限，页面明确显示到期时间。
 - PNG 和 PDF 按需重新生成，导出文件最长保留 24 小时，不作为长期事实源。
 - 用户可以主动“删除宠物”，删除角色资产、导出文件和数据库引用。
 - 在服务正常运行时，独立清理器每小时运行一次，因此本系统的最大删除延迟为到期时间后 1 小时；服务中断时，API 重启前执行追赶清理。到期项目进入 `EXPIRED`，读取路径即使尚未物理清理也不得返回内容。
 - Redis 任务载荷只保存 ID，不保存图片；首版不做备份，缩略图、缓存和临时文件均受同一到期清单管理。
 - 日志不得记录图片、Base64、永久文件 URL、原始文件名、API 密钥或完整第三方响应。
+- 交接原始令牌、完整交接链接、会话 Cookie 和 claim 请求体不得进入日志、追踪、控制台、分析系统或证据目录。
 - 只有第三方供应商提供零留存或可验证删除机制时，产品才能宣称“照片已从所有处理方删除”；否则文案必须限定为“已从本系统存储删除”。
 
 ## 10. 开源复用边界
@@ -441,6 +469,7 @@ UPLOADED -> PROCESSING -> LAYER_REVIEW -> BEAD_REVIEW -> READY
 | 实体导出 | 四块 29×29 重组后与 58×58 中立矩阵逐格完全一致 |
 | 数量 | 各色数量之和等于中立矩阵非空格总数 |
 | 恢复 | 刷新、断网、供应商超时、重复提交和 Worker 重启不丢失已确认结果；供应商 `submit` 对同一幂等键只产生一个任务；故障任务在 10 分钟内完成或进入可解释的失败／对账状态 |
+| 匿名交接 | 手机→桌面→同一手机两次真实领取后项目 ID、当前任务 ID 和最终资产哈希连续；每次领取后新 owner 的 item GET 为 200、旧 owner 的该项目 item API 为 404，旧 owner 的项目列表仍为 200 但排除该 ID；令牌单次、10 分钟到期、轮换撤销和并发双领取均 fail-closed，且无令牌泄漏 |
 | 删除 | 使用假时钟验证原图、未确认中间物、确认资产和导出的各自 TTL；到期后 1 小时内从文件、缓存、缩略图、队列载荷和数据库引用中消失 |
 | 重生成上限 | 每只猫完整重生成最多 1 次、局部重生成最多 2 次；服务端生成等待累计 ≤300 秒 |
 
@@ -452,8 +481,8 @@ UPLOADED -> PROCESSING -> LAYER_REVIEW -> BEAD_REVIEW -> READY
 
 - 单元测试：固定色板与量化版本下的色差匹配、规范化哈希、矩阵合成、父子变换、数量统计、四邻域风险、底板切分和角色 JSON 校验。
 - Provider 契约测试：固定假服务覆盖成功、超时、限流、内容拒绝和异常结果。
-- API／队列集成测试：在提交前、供应商接受后、保存任务 ID 前后和写文件前后分别注入崩溃，验证幂等、对账、检查点、Worker 重启和 TTL 删除。
-- 端到端测试：上传、生成、校正、逐豆编辑、互动和导出完整主路径。
+- API／队列集成测试：在提交前、供应商接受后、保存任务 ID 前后和写文件前后分别注入崩溃，验证幂等、对账、检查点、Worker 重启和 TTL 删除；另验证交接令牌轮换、过期、并发领取及领取与旧 owner 写入竞态。
+- 端到端测试：上传、生成、移动→桌面交接、校正、逐豆编辑、批准、桌面→移动交接、互动和导出完整主路径。
 - 视觉回归：五个动作关键帧、角色中立姿势和四块底板截图。
 - 文件验证：实际打开 PNG 和 PDF，检查方向、编号、字体、色号和打印预览。
 
@@ -469,7 +498,7 @@ UPLOADED -> PROCESSING -> LAYER_REVIEW -> BEAD_REVIEW -> READY
 - 生成费用失控：阶段幂等、最多一次自动重试、记录供应商任务 ID。
 - 拼豆颜色在屏幕和实物中存在差异：冻结色板版本，在产品中说明显示器和批次色差。
 - 图案物理结构脆弱：检测孤立豆、对角连接和单豆宽连接，但由用户最终确认。
-- 单 Worker 明确只服务串行产品演示；一旦需要同时处理两个以上生成任务、跨设备访问或公开运营，先重新评审并发、数据库和对象存储方案，不沿用本规格的单机容量假设。
+- 单 Worker 明确只服务串行产品演示；一旦需要同时处理两个以上生成任务、并行多 owner 同步／协作、规模化跨设备访问或公开运营，先重新评审并发、数据库和对象存储方案，不沿用本规格的单机容量假设。
 
 ## 13. 后续阶段
 
