@@ -2,7 +2,7 @@ UV := uv
 PY := .venv/bin/python
 export PYTHONPATH := $(CURDIR)/apps/api/src
 
-.PHONY: install test lint typecheck build contracts contracts-check check
+.PHONY: install test test-nonredis redis-smoke lint typecheck build contracts contracts-check check
 
 install:
 	$(UV) sync --frozen --extra dev
@@ -11,6 +11,13 @@ install:
 test:
 	$(PY) -m pytest -q -m 'not live_provider'
 	pnpm test
+
+test-nonredis:
+	$(PY) -m pytest -q -m 'not redis and not live_provider'
+
+redis-smoke:
+	RUN_REDIS_TESTS=1 $(PY) -m pytest \
+		apps/api/tests/infrastructure/test_redis_connection.py -m redis -q
 
 lint:
 	$(PY) -m ruff check apps/api/src apps/api/tests tests
