@@ -25,6 +25,7 @@ def test_identity_card_freezes_the_distinctive_calico_markings() -> None:
 
 def test_reference_prompt_uses_one_three_panel_master() -> None:
     prompt = (EXPERIMENT / "prompts" / "reference-master.md").read_text()
+    normalized_prompt = " ".join(prompt.lower().split())
 
     assert "one wide three-panel contact sheet" in prompt
     assert "FRONT" in prompt
@@ -32,16 +33,33 @@ def test_reference_prompt_uses_one_three_panel_master() -> None:
     assert "CAT_RIGHT_FRONT_45" in prompt
     assert "Do not generate the three views independently" in prompt
     assert "no bead art" in prompt
+    assert (
+        "the cat's anatomical left is the cat's own left and appears on the "
+        "viewer's right in the front panel." in normalized_prompt
+    )
+    assert "never mirror or exchange the two named head markings." in normalized_prompt
 
 
 def test_character_prompt_requires_identity_and_real_alpha() -> None:
     prompt = (EXPERIMENT / "prompts" / "character-candidates.md").read_text()
+    normalized_prompt = " ".join(prompt.lower().split())
 
-    assert "identity preservation is the highest priority" in prompt
+    assert "identity preservation is the highest priority" in normalized_prompt
     assert "real alpha transparency" in prompt
     assert "torso is angled about 20 degrees toward image" in prompt.lower()
     assert "tail on image right" in prompt
     assert "NOT_A_PHYSICAL_BEAD_EXPORT" in prompt
+
+
+def test_readme_limits_pass_to_the_visual_prototype() -> None:
+    readme = (EXPERIMENT / "README.md").read_text()
+    normalized_readme = " ".join(readme.lower().split())
+
+    assert (
+        "a pass here proves only a human-in-the-loop visual prototype; it does not "
+        "qualify real pets, a production provider, latency, cost, or the web "
+        "generation path." in normalized_readme
+    )
 
 
 def test_reference_review_example_has_no_ambiguous_pass() -> None:

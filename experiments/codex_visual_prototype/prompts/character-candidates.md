@@ -1,6 +1,6 @@
 Use all three supplied reference views as one identity set. Create the same cat
-as a centered, full-body, static 2.5D fuse-bead character; identity preservation is the highest priority;
-style must not replace the cat's face shape, green eyes,
+as a centered, full-body, static 2.5D fuse-bead character. Identity preservation
+is the highest priority; style must not replace the cat's face shape, green eyes,
 white base coat, anatomical-left-eye orange patch, anatomical-right-ear black
 patch, coherent back patches, or orange-and-black ringed tail.
 
