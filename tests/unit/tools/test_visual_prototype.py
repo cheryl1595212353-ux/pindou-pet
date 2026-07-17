@@ -10,6 +10,7 @@ from PIL import Image
 from tools.visual_prototype import (
     build_manifest,
     inspect_png,
+    main,
     render_previews,
     split_master,
     verify_manifest,
@@ -496,3 +497,19 @@ def test_cli_reports_malformed_manifest_as_a_validation_error(tmp_path: Path) ->
 
     assert result.returncode == 2
     assert "VISUAL PROTOTYPE ERROR" in result.stderr
+
+
+def test_cli_reports_decompression_bomb_as_a_validation_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    image = tmp_path / "small.png"
+    _save_rgb(image, (120, 90))
+    monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 1)
+
+    assert main(["check", str(image)]) == 2
+
+    captured = capsys.readouterr()
+    assert "VISUAL PROTOTYPE ERROR" in captured.err
+    assert "Traceback" not in captured.err

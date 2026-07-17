@@ -68,7 +68,7 @@ def inspect_png(path: Path, *, require_alpha: bool = False) -> dict[str, Any]:
                 "hasRealAlpha": has_real_alpha,
                 "sha256": sha256_file(path),
             }
-    except (OSError, UnidentifiedImageError) as exc:
+    except (OSError, UnidentifiedImageError, Image.DecompressionBombError) as exc:
         raise ValueError(f"{path} is not a readable PNG") from exc
 
     if require_alpha and not evidence["hasRealAlpha"]:
@@ -615,7 +615,13 @@ def main(argv: list[str] | None = None) -> int:
             _json_print(verify_manifest(manifest, args.run_root))
         elif args.command == "verify":
             _json_print(verify_manifest(args.manifest, args.run_root))
-    except (FileNotFoundError, json.JSONDecodeError, OSError, ValueError) as exc:
+    except (
+        FileNotFoundError,
+        json.JSONDecodeError,
+        OSError,
+        ValueError,
+        Image.DecompressionBombError,
+    ) as exc:
         print(f"VISUAL PROTOTYPE ERROR: {exc}", file=sys.stderr)
         return 2
     return 0
