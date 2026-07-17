@@ -2,8 +2,8 @@ Use all three supplied reference views as one identity set. Create the same cat
 as a centered, full-body, static 2.5D pixel-art game sprite. Identity
 preservation is the highest priority; style must not replace the cat's face
 shape, green eyes, white base coat, anatomical-left-eye orange patch,
-anatomical-right-ear black patch, coherent back patches, or orange-and-black
-ringed tail with a dark tip.
+anatomical-right-ear black patch, coherent orange-and-black back patches, or
+orange-and-black ringed tail with a dark tip.
 
 The head faces the viewer. The torso is angled about 20 degrees toward image
 right, with the tail on image right. Keep both ears, all visible paws, the body,

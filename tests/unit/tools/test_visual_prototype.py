@@ -64,6 +64,7 @@ def test_character_prompt_freezes_the_2p5d_square_pixel_contract() -> None:
     assert "flat square pixels with no gaps, holes" in normalized_prompt
     assert "limited-palette clustered highlights and shadows" in normalized_prompt
     assert "real alpha transparency" in normalized_prompt
+    assert "orange-and-black back patches" in normalized_prompt
     assert "torso is angled about 20 degrees toward image" in normalized_prompt
     assert "tail on image right" in normalized_prompt
     assert "pixel_art_visual_proxy" in normalized_prompt
