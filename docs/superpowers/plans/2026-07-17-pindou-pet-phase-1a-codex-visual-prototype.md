@@ -1,5 +1,8 @@
 # 拼豆虚拟宠物 Phase 1A：Codex 合成三视图视觉原型 Implementation Plan
 
+> 历史计划说明：Task 1–3 的身份、校验工具和三视图结果继续有效；拼豆候选与
+> 后续出口已被 `2026-07-17-pindou-pet-phase-1a-pixel-art-revision.md` 取代。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (- [ ]) syntax for tracking.
 
 **Goal:** 不使用用户提供的 API Key，由 Codex 子 agent 生成一只合成三花猫的统一三视图，并在严格本地证据和用户门禁下产出一个可辨认的静态 2.5D 拼豆角色原型。
