@@ -1,0 +1,12 @@
+{
+  "anatomicalMarkingsStable": true,
+  "fullBodyVisible": true,
+  "noExtraLimbs": true,
+  "notes": "All three panels preserve the frozen synthetic identity.",
+  "pass": true,
+  "photographicNotBeadArt": true,
+  "sameIdentity": true,
+  "schemaVersion": 1,
+  "viewsCorrect": true,
+  "violations": []
+}

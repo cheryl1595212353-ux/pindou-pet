@@ -1,0 +1,15 @@
+{
+  "accessories": [],
+  "anatomicalMarkings": [
+    "orange patch around the cat's anatomical left eye",
+    "black patch on the cat's anatomical right ear and adjacent crown",
+    "large coherent orange and black patches on the back",
+    "orange and black ringed tail with a dark tip"
+  ],
+  "baseCoatColor": "white",
+  "bodyBuild": "medium natural proportions",
+  "coatLength": "short",
+  "eyeColor": "green",
+  "schemaVersion": 1,
+  "species": "cat"
+}
