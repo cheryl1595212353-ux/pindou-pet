@@ -1,0 +1,17 @@
+{
+  "name": "@pindou/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "openapi-typescript openapi.json -o src/generated.ts",
+    "contracts:check": "node scripts/check-generated.mjs"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.10.0"
+  }
+}
+

@@ -1,3 +1,17 @@
 .superpowers/
 .worktrees/
 .DS_Store
+.env
+.venv/
+node_modules/
+dist/
+*.tsbuildinfo
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
+*.egg-info/
+var/
+.artifacts/
+playwright-report/
+test-results/

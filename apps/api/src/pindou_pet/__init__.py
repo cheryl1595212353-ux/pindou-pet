@@ -1,0 +1,1 @@
+"""Pindou Pet API package."""
