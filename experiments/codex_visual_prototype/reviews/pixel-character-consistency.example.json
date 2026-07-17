@@ -1,0 +1,16 @@
+{
+  "alphaValid": true,
+  "fullBodyVisible": true,
+  "limitedBlockShading": true,
+  "markingsStable": true,
+  "noBeadOrVoxelMaterials": true,
+  "noExtraLimbs": true,
+  "notes": "The candidate preserves identity on a single flat square-pixel grid.",
+  "pass": true,
+  "poseCorrect": true,
+  "sameIdentity": true,
+  "schemaVersion": 1,
+  "squarePixelGrid": true,
+  "stylePass": true,
+  "violations": []
+}

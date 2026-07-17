@@ -54,21 +54,31 @@ def test_reference_prompt_uses_one_three_panel_master() -> None:
     assert "never mirror or exchange the two named head markings." in normalized_prompt
 
 
-def test_character_prompt_requires_identity_and_real_alpha() -> None:
+def test_character_prompt_freezes_the_2p5d_square_pixel_contract() -> None:
     prompt = (EXPERIMENT / "prompts" / "character-candidates.md").read_text()
     normalized_prompt = " ".join(prompt.lower().split())
 
     assert "identity preservation is the highest priority" in normalized_prompt
-    assert "real alpha transparency" in prompt
-    assert "torso is angled about 20 degrees toward image" in prompt.lower()
-    assert "tail on image right" in prompt
-    assert "NOT_A_PHYSICAL_BEAD_EXPORT" in prompt
+    assert "static 2.5d pixel-art game sprite" in normalized_prompt
+    assert "one screen-aligned 2d raster grid" in normalized_prompt
+    assert "flat square pixels with no gaps, holes" in normalized_prompt
+    assert "limited-palette clustered highlights and shadows" in normalized_prompt
+    assert "real alpha transparency" in normalized_prompt
+    assert "torso is angled about 20 degrees toward image" in normalized_prompt
+    assert "tail on image right" in normalized_prompt
+    assert "pixel_art_visual_proxy" in normalized_prompt
+    assert "static 2.5d fuse-bead character" not in normalized_prompt
+    assert "plastic fuse-bead units" not in normalized_prompt
 
 
-def test_readme_limits_pass_to_the_visual_prototype() -> None:
+def test_readme_separates_the_rejected_bead_run_from_pixel_v2() -> None:
     readme = (EXPERIMENT / "README.md").read_text()
     normalized_readme = " ".join(readme.lower().split())
 
+    assert "var/phase-1a/synthetic-cat-01/" in normalized_readme
+    assert "rejected fuse-bead experiment" in normalized_readme
+    assert "var/phase-1a/synthetic-cat-01-pixel-v2/" in normalized_readme
+    assert "active 2.5d pixel-art revision" in normalized_readme
     assert (
         "a pass here proves only a human-in-the-loop visual prototype; it does not "
         "qualify real pets, a production provider, latency, cost, or the web "
@@ -92,6 +102,33 @@ def test_reference_review_example_has_no_ambiguous_pass() -> None:
     assert required.issubset(review)
     assert review["pass"] is True
     assert all(review[key] is True for key in required)
+    assert review["violations"] == []
+
+
+def test_pixel_character_review_example_has_no_ambiguous_pass() -> None:
+    review = json.loads(
+        (
+            EXPERIMENT
+            / "reviews"
+            / "pixel-character-consistency.example.json"
+        ).read_text()
+    )
+
+    style_flags = {
+        "sameIdentity",
+        "markingsStable",
+        "poseCorrect",
+        "squarePixelGrid",
+        "limitedBlockShading",
+        "noBeadOrVoxelMaterials",
+        "fullBodyVisible",
+        "noExtraLimbs",
+    }
+    assert style_flags.issubset(review)
+    assert review["stylePass"] is True
+    assert all(review[key] is True for key in style_flags)
+    assert review["alphaValid"] is True
+    assert review["pass"] is True
     assert review["violations"] == []
 
 
