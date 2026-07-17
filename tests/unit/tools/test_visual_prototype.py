@@ -1,3 +1,4 @@
+import hashlib
 import json
 import shutil
 import subprocess
@@ -253,6 +254,7 @@ def test_manifest_rejects_absolute_paths_and_verifies_hashes(tmp_path: Path) -> 
         run_root / "selected" / "character-hd.png",
         run_root / "selected",
     )
+    _write_final_character_review(run_root)
 
     manifest = build_manifest(
         run_root,
@@ -345,6 +347,37 @@ def _save_transparent_swatch(path: Path, size: tuple[int, int]) -> None:
     image.save(path, format="PNG")
 
 
+def _final_character_review(**updates: object) -> dict[str, object]:
+    review: dict[str, object] = {
+        "schemaVersion": 1,
+        "sameIdentity": True,
+        "markingsStable": True,
+        "poseCorrect": True,
+        "squarePixelGrid": True,
+        "limitedBlockShading": True,
+        "noBeadOrVoxelMaterials": True,
+        "fullBodyVisible": True,
+        "noExtraLimbs": True,
+        "stylePass": True,
+        "alphaValid": True,
+        "pass": True,
+        "violations": [],
+        "notes": "The final character is the reviewed selected image.",
+    }
+    review.update(updates)
+    return review
+
+
+def _write_final_character_review(run_root: Path, **updates: object) -> Path:
+    review_path = run_root / "reviews" / "final-character-consistency.json"
+    review_path.write_text(json.dumps(_final_character_review(**updates)))
+    return review_path
+
+
+def _refresh_png_artifact(artifact: dict[str, object], path: Path) -> None:
+    artifact.update(inspect_png(path))
+
+
 def _prepare_passing_run(tmp_path: Path) -> Path:
     run_root = tmp_path / "synthetic-cat-01"
     for name in (
@@ -385,6 +418,7 @@ def _prepare_passing_run(tmp_path: Path) -> Path:
         run_root / "selected" / "character-hd.png",
     )
     render_previews(run_root / "selected" / "character-hd.png", run_root / "selected")
+    _write_final_character_review(run_root)
     return run_root
 
 
@@ -397,6 +431,249 @@ def _build_passing_manifest(run_root: Path) -> Path:
         user_approved=True,
         correction_count=0,
     )
+
+
+def test_pass_manifest_embeds_the_valid_final_character_review(tmp_path: Path) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+
+    manifest = _build_passing_manifest(run_root)
+    payload = json.loads(manifest.read_text())
+
+    assert "review" in payload["final"]
+    assert payload["final"]["review"]["evidence"]["path"] == (
+        "reviews/final-character-consistency.json"
+    )
+    assert payload["final"]["review"]["pass"] is True
+
+
+def test_build_manifest_rejects_missing_or_failed_final_character_review(
+    tmp_path: Path,
+) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    (run_root / "reviews" / "final-character-consistency.json").unlink()
+
+    with pytest.raises(ValueError, match="final character review"):
+        _build_passing_manifest(run_root)
+
+    _write_final_character_review(
+        run_root,
+        markingsStable=False,
+        stylePass=False,
+        violations=["Markings changed."],
+        **{"pass": False},
+    )
+
+    with pytest.raises(ValueError, match="final character review"):
+        _build_passing_manifest(run_root)
+
+
+def test_build_and_verify_reject_selected_candidate_final_hash_mismatch(
+    tmp_path: Path,
+) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    _save_transparent_swatch(run_root / "selected" / "character-hd.png", (120, 90))
+    render_previews(run_root / "selected" / "character-hd.png", run_root / "selected")
+
+    with pytest.raises(ValueError, match="selected candidate"):
+        _build_passing_manifest(run_root)
+
+    shutil.copyfile(
+        run_root / "candidates" / "candidate-01.png",
+        run_root / "selected" / "character-hd.png",
+    )
+    render_previews(run_root / "selected" / "character-hd.png", run_root / "selected")
+    manifest = _build_passing_manifest(run_root)
+    _save_transparent_swatch(run_root / "selected" / "character-hd.png", (120, 90))
+    render_previews(run_root / "selected" / "character-hd.png", run_root / "selected")
+    payload = json.loads(manifest.read_text())
+    _refresh_png_artifact(
+        payload["final"]["character"], run_root / "selected" / "character-hd.png"
+    )
+    _refresh_png_artifact(
+        payload["final"]["preview58"], run_root / "selected" / "preview-58.png"
+    )
+    _refresh_png_artifact(
+        payload["final"]["preview464"], run_root / "selected" / "preview-464.png"
+    )
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="selected candidate"):
+        verify_manifest(manifest, run_root)
+
+
+def test_corrected_pass_requires_matching_prompt_and_output(tmp_path: Path) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    correction_prompt = run_root / "prompts" / "correction.md"
+    correction_prompt.write_text("correct only the reviewed selected image")
+
+    with pytest.raises(ValueError, match="correction output"):
+        build_manifest(
+            run_root,
+            master_attempt_count=1,
+            decision="VISUAL_PROTOTYPE_PASS",
+            selected_candidate_id="candidate-01",
+            user_approved=True,
+            correction_count=1,
+        )
+
+    correction_output = run_root / "reviews" / "correction-call.png"
+    shutil.copyfile(run_root / "candidates" / "candidate-01.png", correction_output)
+    manifest = build_manifest(
+        run_root,
+        master_attempt_count=1,
+        decision="VISUAL_PROTOTYPE_PASS",
+        selected_candidate_id="candidate-01",
+        user_approved=True,
+        correction_count=1,
+    )
+    payload = json.loads(manifest.read_text())
+    assert "correctionOutput" in payload
+
+    _save_transparent_swatch(correction_output, (120, 90))
+    _refresh_png_artifact(payload["correctionOutput"], correction_output)
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="correction output"):
+        verify_manifest(manifest, run_root)
+
+
+def test_stop_manifest_requires_null_selection_and_records_opaque_correction_output(
+    tmp_path: Path,
+) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    (run_root / "prompts" / "correction.md").write_text("attempt correction")
+    _save_rgb(run_root / "reviews" / "correction-call.png", (120, 90))
+
+    with pytest.raises(ValueError, match="candidateId"):
+        build_manifest(
+            run_root,
+            master_attempt_count=1,
+            decision="STOP_REVISE_STYLE",
+            selected_candidate_id="candidate-01",
+            user_approved=False,
+            correction_count=1,
+        )
+
+    manifest = build_manifest(
+        run_root,
+        master_attempt_count=1,
+        decision="STOP_REVISE_STYLE",
+        selected_candidate_id=None,
+        user_approved=False,
+        correction_count=1,
+    )
+    payload = json.loads(manifest.read_text())
+    assert "correctionPrompt" in payload
+    assert payload["correctionOutput"]["hasRealAlpha"] is False
+    assert verify_manifest(manifest, run_root)["decision"] == "STOP_REVISE_STYLE"
+
+    payload["selection"]["candidateId"] = "candidate-01"
+    manifest.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="candidateId"):
+        verify_manifest(manifest, run_root)
+
+
+def test_correction_count_zero_rejects_prompt_and_output_evidence(tmp_path: Path) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    (run_root / "prompts" / "correction.md").write_text("unexpected correction")
+
+    with pytest.raises(ValueError, match="correction prompt"):
+        build_manifest(
+            run_root,
+            master_attempt_count=1,
+            decision="STOP_REVISE_STYLE",
+            selected_candidate_id=None,
+            user_approved=False,
+            correction_count=0,
+        )
+
+    (run_root / "prompts" / "correction.md").unlink()
+    manifest = build_manifest(
+        run_root,
+        master_attempt_count=1,
+        decision="STOP_REVISE_STYLE",
+        selected_candidate_id=None,
+        user_approved=False,
+        correction_count=0,
+    )
+    _save_rgb(run_root / "reviews" / "correction-call.png", (120, 90))
+
+    with pytest.raises(ValueError, match="correction output"):
+        verify_manifest(manifest, run_root)
+
+
+def test_build_and_verify_reject_nested_sensitive_manifest_values(tmp_path: Path) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    reference_review = run_root / "reviews" / "reference-consistency.json"
+    review = json.loads(reference_review.read_text())
+    review["notes"] = "token=demo"
+    reference_review.write_text(json.dumps(review))
+
+    with pytest.raises(ValueError, match="forbidden manifest string"):
+        _build_passing_manifest(run_root)
+
+    review["notes"] = "ordinary reviewed note"
+    reference_review.write_text(json.dumps(review))
+    manifest = _build_passing_manifest(run_root)
+    payload = json.loads(manifest.read_text())
+    review["notes"] = "api_key=demo"
+    reference_review.write_text(json.dumps(review))
+    payload["referenceReview"]["notes"] = review["notes"]
+    payload["referenceReview"]["evidence"]["sha256"] = hashlib.sha256(
+        reference_review.read_bytes()
+    ).hexdigest()
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="forbidden manifest string"):
+        verify_manifest(manifest, run_root)
+
+
+@pytest.mark.parametrize("invalid_version", [True, 1.0, "1", None])
+def test_manifest_rejects_non_exact_top_level_schema_version(
+    tmp_path: Path, invalid_version: object
+) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    manifest = _build_passing_manifest(run_root)
+    payload = json.loads(manifest.read_text())
+    payload["schemaVersion"] = invalid_version
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="schemaVersion"):
+        verify_manifest(manifest, run_root)
+
+
+@pytest.mark.parametrize("invalid_version", [True, 1.0, "1", None])
+def test_build_rejects_non_exact_review_schema_versions(
+    tmp_path: Path, invalid_version: object
+) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    reference_review = run_root / "reviews" / "reference-consistency.json"
+    reference_payload = json.loads(reference_review.read_text())
+    reference_payload["schemaVersion"] = invalid_version
+    reference_review.write_text(json.dumps(reference_payload))
+
+    with pytest.raises(ValueError, match="reference review schemaVersion"):
+        _build_passing_manifest(run_root)
+
+    reference_payload["schemaVersion"] = 1
+    reference_review.write_text(json.dumps(reference_payload))
+    _write_final_character_review(run_root, schemaVersion=invalid_version)
+
+    with pytest.raises(ValueError, match="final character review schemaVersion"):
+        _build_passing_manifest(run_root)
+
+
+def test_verify_manifest_rejects_forged_final_review_evidence(tmp_path: Path) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    manifest = _build_passing_manifest(run_root)
+    payload = json.loads(manifest.read_text())
+
+    assert "review" in payload["final"]
+    payload["final"]["review"]["notes"] = "forged review text"
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="final character review"):
+        verify_manifest(manifest, run_root)
 
 
 def test_build_manifest_rejects_invalid_pass_master_and_reference_provenance(

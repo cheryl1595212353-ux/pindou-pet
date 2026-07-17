@@ -37,6 +37,16 @@ REQUIRED_REVIEW_FLAGS = (
     "noExtraLimbs",
     "photographicNotBeadArt",
 )
+CHARACTER_STYLE_FLAGS = (
+    "sameIdentity",
+    "markingsStable",
+    "poseCorrect",
+    "squarePixelGrid",
+    "limitedBlockShading",
+    "noBeadOrVoxelMaterials",
+    "fullBodyVisible",
+    "noExtraLimbs",
+)
 
 
 class VisualPrototypeArgumentParser(argparse.ArgumentParser):
@@ -176,9 +186,12 @@ def _assert_manifest_safe(value: Any, *, key_path: str = "manifest") -> None:
             _assert_manifest_safe(child, key_path=f"{key_path}[{index}]")
         return
     if isinstance(value, str):
+        lowered = value.lower()
+        if any(part in lowered for part in FORBIDDEN_KEY_PARTS):
+            raise ValueError(f"forbidden manifest string: {key_path}")
         if value.startswith("/") or WINDOWS_ABSOLUTE_RE.match(value):
             raise ValueError(f"absolute path is forbidden at {key_path}")
-        if value.startswith("data:image") or len(value) > 4096:
+        if "data:image" in lowered or len(value) > 4096:
             raise ValueError(f"embedded image data is forbidden at {key_path}")
 
 
@@ -249,6 +262,32 @@ def _require_artifact(
     return path
 
 
+def _require_expected_artifact(
+    value: Any,
+    run_root: Path,
+    label: str,
+    expected_path: Path,
+    *,
+    png: bool = False,
+    require_alpha: bool = False,
+) -> Path:
+    path = _require_artifact(
+        value,
+        run_root,
+        label,
+        png=png,
+        require_alpha=require_alpha,
+    )
+    if path != expected_path.resolve():
+        raise ValueError(f"{label} artifact path is unexpected")
+    return path
+
+
+def _assert_hash_identical(first: Path, second: Path, label: str) -> None:
+    if sha256_file(first) != sha256_file(second):
+        raise ValueError(f"{label} must be byte-identical")
+
+
 def _assert_three_view_master(master: Path) -> None:
     evidence = inspect_png(master)
     if evidence["width"] % len(VIEWS) != 0:
@@ -310,12 +349,42 @@ def _assert_preview_contract(preview_58: Path, preview_464: Path) -> None:
 
 def _validate_reference_review_shape(review: Any) -> dict[str, Any]:
     review_object = _require_mapping(review, "reference review")
+    if type(review_object.get("schemaVersion")) is not int or review_object.get(
+        "schemaVersion"
+    ) != 1:
+        raise ValueError("reference review schemaVersion must be integer 1")
     if type(review_object.get("pass")) is not bool:
         raise ValueError("reference review pass must be a boolean")
     if any(type(review_object.get(flag)) is not bool for flag in REQUIRED_REVIEW_FLAGS):
         raise ValueError("reference review flags must be booleans")
     if not isinstance(review_object.get("violations"), list):
         raise ValueError("reference review violations must be a list")
+    return review_object
+
+
+def _validate_final_character_review_shape(review: Any) -> dict[str, Any]:
+    review_object = _require_mapping(review, "final character review")
+    if type(review_object.get("schemaVersion")) is not int or review_object.get(
+        "schemaVersion"
+    ) != 1:
+        raise ValueError("final character review schemaVersion must be integer 1")
+    if any(type(review_object.get(flag)) is not bool for flag in CHARACTER_STYLE_FLAGS):
+        raise ValueError("final character review style flags must be booleans")
+    if type(review_object.get("stylePass")) is not bool:
+        raise ValueError("final character review stylePass must be a boolean")
+    if type(review_object.get("alphaValid")) is not bool:
+        raise ValueError("final character review alphaValid must be a boolean")
+    if type(review_object.get("pass")) is not bool:
+        raise ValueError("final character review pass must be a boolean")
+    if not isinstance(review_object.get("violations"), list):
+        raise ValueError("final character review violations must be a list")
+
+    style_pass = all(review_object[flag] for flag in CHARACTER_STYLE_FLAGS)
+    if review_object["stylePass"] != style_pass:
+        raise ValueError("final character review stylePass derivation is invalid")
+    passed = style_pass and review_object["alphaValid"] and review_object["violations"] == []
+    if review_object["pass"] != passed:
+        raise ValueError("final character review pass derivation is invalid")
     return review_object
 
 
@@ -327,6 +396,21 @@ def _assert_reference_review(review: Any) -> dict[str, Any]:
         raise ValueError("reference review flags must all pass before prototype PASS")
     if review_object.get("violations") != []:
         raise ValueError("reference review violations must be empty before prototype PASS")
+    return review_object
+
+
+def _assert_final_character_review(review: Any) -> dict[str, Any]:
+    review_object = _validate_final_character_review_shape(review)
+    if any(review_object[flag] is not True for flag in CHARACTER_STYLE_FLAGS):
+        raise ValueError("final character review style flags must all pass")
+    if review_object["stylePass"] is not True:
+        raise ValueError("final character review stylePass must pass")
+    if review_object["alphaValid"] is not True:
+        raise ValueError("final character review alphaValid must pass")
+    if review_object["pass"] is not True:
+        raise ValueError("final character review must pass")
+    if review_object["violations"] != []:
+        raise ValueError("final character review violations must be empty")
     return review_object
 
 
@@ -351,6 +435,16 @@ def build_manifest(
     master = run_root / "references" / "three-view-master.png"
     review_path = run_root / "reviews" / "reference-consistency.json"
     review = _load_json(review_path)
+    _validate_reference_review_shape(review)
+    correction_prompt = run_root / "prompts" / "correction.md"
+    correction_output = run_root / "reviews" / "correction-call.png"
+    if correction_count == 0:
+        if correction_prompt.exists():
+            raise ValueError("correction prompt exists while correction count is zero")
+        if correction_output.exists():
+            raise ValueError("correction output exists while correction count is zero")
+    elif not correction_prompt.is_file():
+        raise ValueError("correction prompt is required when correction count is one")
     reference_paths = [run_root / "references" / filename for _, filename in VIEWS]
     present_references = [path.exists() for path in reference_paths]
     if any(present_references) and not all(present_references):
@@ -390,7 +484,8 @@ def build_manifest(
             }
         )
 
-    candidate_ids = {item["candidateId"] for item in candidates}
+    candidate_image_paths = {path.stem: path for path in candidate_paths}
+    candidate_ids = set(candidate_image_paths)
     payload: dict[str, Any] = {
         "schemaVersion": 1,
         "identity": _relative_artifact(identity, run_root),
@@ -417,12 +512,22 @@ def build_manifest(
             raise ValueError("prototype PASS requires an approved existing candidate")
         _assert_reference_provenance(master, references, run_root)
         selected_dir = run_root / "selected"
+        character = selected_dir / "character-hd.png"
         preview_58 = selected_dir / "preview-58.png"
         preview_464 = selected_dir / "preview-464.png"
         _assert_preview_contract(preview_58, preview_464)
+        final_review_path = run_root / "reviews" / "final-character-consistency.json"
+        if not final_review_path.is_file():
+            raise ValueError("final character review is required for prototype PASS")
+        final_review = _assert_final_character_review(_load_json(final_review_path))
+        _assert_hash_identical(
+            candidate_image_paths[selected_candidate_id],
+            character,
+            "selected candidate image and final character",
+        )
         payload["final"] = {
             "character": _relative_artifact(
-                selected_dir / "character-hd.png",
+                character,
                 run_root,
                 png=True,
                 require_alpha=True,
@@ -439,14 +544,42 @@ def build_manifest(
                 png=True,
                 require_alpha=True,
             ),
+            "review": {
+                **final_review,
+                "evidence": _relative_artifact(final_review_path, run_root),
+            },
         }
-        correction = run_root / "prompts" / "correction.md"
         if correction_count == 1:
-            payload["correctionPrompt"] = _relative_artifact(correction, run_root)
-        elif correction.exists():
-            raise ValueError("correction prompt exists while correction count is zero")
-    elif user_approved:
-        raise ValueError("STOP decision cannot claim user approval")
+            if not correction_output.is_file():
+                raise ValueError("correction output is required for prototype PASS")
+            _assert_hash_identical(
+                candidate_image_paths[selected_candidate_id],
+                correction_output,
+                "correction output and selected candidate image",
+            )
+            _assert_hash_identical(
+                character,
+                correction_output,
+                "correction output and final character",
+            )
+            payload["correctionOutput"] = _relative_artifact(
+                correction_output,
+                run_root,
+                png=True,
+                require_alpha=True,
+            )
+    else:
+        if user_approved is not False or selected_candidate_id is not None:
+            raise ValueError("STOP selection requires approved false and candidateId null")
+        if correction_count == 1 and correction_output.exists():
+            payload["correctionOutput"] = _relative_artifact(
+                correction_output,
+                run_root,
+                png=True,
+            )
+
+    if correction_count == 1:
+        payload["correctionPrompt"] = _relative_artifact(correction_prompt, run_root)
 
     _assert_manifest_safe(payload)
     manifest = run_root / "manifest.json"
@@ -457,8 +590,10 @@ def build_manifest(
 def verify_manifest(manifest_path: Path, run_root: Path) -> dict[str, Any]:
     payload = _load_json(manifest_path)
     _assert_manifest_safe(payload)
-    if payload.get("schemaVersion") != 1:
-        raise ValueError("manifest schemaVersion must be 1")
+    if type(payload.get("schemaVersion")) is not int or payload.get(
+        "schemaVersion"
+    ) != 1:
+        raise ValueError("manifest schemaVersion must be integer 1")
     decision = payload.get("decision")
     if decision not in DECISIONS:
         raise ValueError("manifest decision is invalid")
@@ -494,16 +629,15 @@ def verify_manifest(manifest_path: Path, run_root: Path) -> dict[str, Any]:
     candidates = _require_list(payload.get("candidates"), "candidates")
     if len(candidates) > 3:
         raise ValueError("manifest contains more than three candidates")
-    candidate_ids: set[str] = set()
+    candidate_images: dict[str, Path] = {}
     for candidate in candidates:
         candidate_object = _require_mapping(candidate, "candidate")
         candidate_id = candidate_object.get("candidateId")
         if not isinstance(candidate_id, str) or not candidate_id:
             raise ValueError("candidateId must be a non-empty string")
-        if candidate_id in candidate_ids:
+        if candidate_id in candidate_images:
             raise ValueError("candidate IDs must be unique")
-        candidate_ids.add(candidate_id)
-        _require_artifact(
+        candidate_images[candidate_id] = _require_artifact(
             candidate_object.get("image"),
             root,
             f"candidate {candidate_id} image",
@@ -524,38 +658,120 @@ def verify_manifest(manifest_path: Path, run_root: Path) -> dict[str, Any]:
         raise ValueError("selection candidateId must be a string or null")
     if type(correction_count) is not int or correction_count not in (0, 1):
         raise ValueError("selection correctionCount must be 0 or 1")
-    if "correctionPrompt" in payload:
-        _require_artifact(payload["correctionPrompt"], root, "correction prompt")
+    correction_prompt = root / "prompts" / "correction.md"
+    correction_output = root / "reviews" / "correction-call.png"
+    if correction_count == 0:
+        if "correctionPrompt" in payload:
+            raise ValueError("manifest has an unexpected correction prompt")
+        if "correctionOutput" in payload:
+            raise ValueError("manifest has an unexpected correction output")
+        if correction_prompt.exists():
+            raise ValueError("correction prompt exists while correction count is zero")
+        if correction_output.exists():
+            raise ValueError("correction output exists while correction count is zero")
+    else:
+        if "correctionPrompt" not in payload:
+            raise ValueError("manifest lacks correction prompt")
+        _require_expected_artifact(
+            payload["correctionPrompt"],
+            root,
+            "correction prompt",
+            correction_prompt,
+        )
 
     if decision == "VISUAL_PROTOTYPE_PASS":
         _assert_reference_review(review)
         _assert_reference_provenance(master, references, root)
-        if not candidate_ids:
+        if not candidate_images:
             raise ValueError("PASS manifest requires at least one candidate")
-        if approved is not True or selected_candidate_id not in candidate_ids:
+        if approved is not True or selected_candidate_id not in candidate_images:
             raise ValueError("PASS manifest selection must approve an existing candidate")
         final = _require_mapping(payload.get("final"), "final")
-        _require_artifact(
-            final.get("character"), root, "final character", png=True, require_alpha=True
+        final_character = _require_expected_artifact(
+            final.get("character"),
+            root,
+            "final character",
+            root / "selected" / "character-hd.png",
+            png=True,
+            require_alpha=True,
         )
-        preview_58 = _require_artifact(
-            final.get("preview58"), root, "final preview58", png=True, require_alpha=True
+        preview_58 = _require_expected_artifact(
+            final.get("preview58"),
+            root,
+            "final preview58",
+            root / "selected" / "preview-58.png",
+            png=True,
+            require_alpha=True,
         )
-        preview_464 = _require_artifact(
-            final.get("preview464"), root, "final preview464", png=True, require_alpha=True
+        preview_464 = _require_expected_artifact(
+            final.get("preview464"),
+            root,
+            "final preview464",
+            root / "selected" / "preview-464.png",
+            png=True,
+            require_alpha=True,
         )
         _assert_preview_contract(preview_58, preview_464)
-        if correction_count == 1 and "correctionPrompt" not in payload:
-            raise ValueError("PASS manifest lacks correction prompt")
-        if correction_count == 0 and "correctionPrompt" in payload:
-            raise ValueError("PASS manifest has an unexpected correction prompt")
+        _assert_hash_identical(
+            candidate_images[selected_candidate_id],
+            final_character,
+            "selected candidate image and final character",
+        )
+        final_review = _assert_final_character_review(final.get("review"))
+        final_review_evidence = _require_expected_artifact(
+            final_review.get("evidence"),
+            root,
+            "final character review evidence",
+            root / "reviews" / "final-character-consistency.json",
+        )
+        final_review_payload = {
+            key: value for key, value in final_review.items() if key != "evidence"
+        }
+        if final_review_payload != _load_json(final_review_evidence):
+            raise ValueError("final character review does not match its evidence artifact")
+        if correction_count == 1:
+            if "correctionOutput" not in payload:
+                raise ValueError("PASS manifest lacks correction output")
+            output = _require_expected_artifact(
+                payload["correctionOutput"],
+                root,
+                "correction output",
+                correction_output,
+                png=True,
+                require_alpha=True,
+            )
+            _assert_hash_identical(
+                candidate_images[selected_candidate_id],
+                output,
+                "correction output and selected candidate image",
+            )
+            _assert_hash_identical(
+                final_character,
+                output,
+                "correction output and final character",
+            )
     else:
         if actual_views not in ([], expected_views):
             raise ValueError("STOP reference evidence is partial or out of order")
         if actual_views:
             _assert_reference_provenance(master, references, root)
-        if approved:
-            raise ValueError("STOP manifest cannot claim user approval")
+        if approved is not False or selected_candidate_id is not None:
+            raise ValueError("STOP selection requires approved false and candidateId null")
+        if "final" in payload or "finalReview" in payload:
+            raise ValueError("STOP manifest must not contain final evidence")
+        if correction_count == 1:
+            if correction_output.exists():
+                if "correctionOutput" not in payload:
+                    raise ValueError("STOP manifest lacks correction output")
+                _require_expected_artifact(
+                    payload["correctionOutput"],
+                    root,
+                    "correction output",
+                    correction_output,
+                    png=True,
+                )
+            elif "correctionOutput" in payload:
+                raise ValueError("STOP manifest has an unexpected correction output")
 
     return payload
 
