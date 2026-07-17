@@ -282,3 +282,217 @@ def test_cli_argument_validation_uses_the_visual_prototype_error_prefix() -> Non
 
     assert result.returncode == 2
     assert "VISUAL PROTOTYPE ERROR" in result.stderr
+
+
+def _save_transparent_swatch(path: Path, size: tuple[int, int]) -> None:
+    image = Image.new("RGBA", size, (0, 0, 0, 0))
+    image.putpixel((0, 0), (30, 180, 220, 255))
+    image.save(path, format="PNG")
+
+
+def _prepare_passing_run(tmp_path: Path) -> Path:
+    run_root = tmp_path / "synthetic-cat-01"
+    for name in (
+        "identity",
+        "prompts",
+        "references",
+        "reviews",
+        "candidates",
+        "selected",
+    ):
+        (run_root / name).mkdir(parents=True, exist_ok=True)
+
+    (run_root / "identity" / "identity-card.json").write_text("{}")
+    (run_root / "prompts" / "reference-master.md").write_text("reference")
+    (run_root / "prompts" / "candidate-01.md").write_text("candidate")
+    master = run_root / "references" / "three-view-master.png"
+    _save_rgb(master, (1536, 512))
+    split_master(master, run_root / "references")
+    (run_root / "reviews" / "reference-consistency.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": 1,
+                "sameIdentity": True,
+                "viewsCorrect": True,
+                "anatomicalMarkingsStable": True,
+                "fullBodyVisible": True,
+                "noExtraLimbs": True,
+                "photographicNotBeadArt": True,
+                "pass": True,
+                "violations": [],
+                "notes": "pass",
+            }
+        )
+    )
+    _save_transparent_character(run_root / "candidates" / "candidate-01.png")
+    shutil.copyfile(
+        run_root / "candidates" / "candidate-01.png",
+        run_root / "selected" / "character-hd.png",
+    )
+    render_previews(run_root / "selected" / "character-hd.png", run_root / "selected")
+    return run_root
+
+
+def _build_passing_manifest(run_root: Path) -> Path:
+    return build_manifest(
+        run_root,
+        master_attempt_count=1,
+        decision="VISUAL_PROTOTYPE_PASS",
+        selected_candidate_id="candidate-01",
+        user_approved=True,
+        correction_count=0,
+    )
+
+
+def test_build_manifest_rejects_invalid_pass_master_and_reference_provenance(
+    tmp_path: Path,
+) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    _save_rgb(run_root / "references" / "three-view-master.png", (1200, 512))
+
+    with pytest.raises(ValueError, match="512"):
+        _build_passing_manifest(run_root)
+
+    _save_rgb(run_root / "references" / "three-view-master.png", (1536, 512))
+    _save_transparent_swatch(run_root / "references" / "front.png", (512, 512))
+
+    with pytest.raises(ValueError, match="reference"):
+        _build_passing_manifest(run_root)
+
+
+def test_verify_manifest_rejects_forged_pass_review_selection_and_final(
+    tmp_path: Path,
+) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    manifest = _build_passing_manifest(run_root)
+    payload = json.loads(manifest.read_text())
+    payload["referenceReview"]["sameIdentity"] = False
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="reference review"):
+        verify_manifest(manifest, run_root)
+
+    manifest = _build_passing_manifest(run_root)
+    payload = json.loads(manifest.read_text())
+    payload["selection"]["candidateId"] = "candidate-99"
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="selection"):
+        verify_manifest(manifest, run_root)
+
+    manifest = _build_passing_manifest(run_root)
+    payload = json.loads(manifest.read_text())
+    payload["final"] = {"character": payload["final"]["character"]}
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="final"):
+        verify_manifest(manifest, run_root)
+
+
+def test_verify_manifest_rejects_malformed_pass_collections_and_artifacts(
+    tmp_path: Path,
+) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    manifest = _build_passing_manifest(run_root)
+    payload = json.loads(manifest.read_text())
+    payload["references"] = None
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="references"):
+        verify_manifest(manifest, run_root)
+
+    manifest = _build_passing_manifest(run_root)
+    payload = json.loads(manifest.read_text())
+    payload["candidates"] = [{"candidateId": "candidate-01"}]
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="candidate"):
+        verify_manifest(manifest, run_root)
+
+    manifest = _build_passing_manifest(run_root)
+    payload = json.loads(manifest.read_text())
+    payload["identity"]["path"] = 42
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="artifact"):
+        verify_manifest(manifest, run_root)
+
+
+def test_verify_manifest_rejects_forged_master_reference_and_preview_evidence(
+    tmp_path: Path,
+) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    manifest = _build_passing_manifest(run_root)
+    master = run_root / "references" / "three-view-master.png"
+    _save_rgb(master, (1200, 512))
+    payload = json.loads(manifest.read_text())
+    payload["master"].update(inspect_png(master))
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="512"):
+        verify_manifest(manifest, run_root)
+
+    _save_rgb(master, (1536, 512))
+    split_master(master, run_root / "references")
+    manifest = _build_passing_manifest(run_root)
+    front = run_root / "references" / "front.png"
+    _save_transparent_swatch(front, (512, 512))
+    payload = json.loads(manifest.read_text())
+    payload["references"][0].update(inspect_png(front))
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="reference"):
+        verify_manifest(manifest, run_root)
+
+    split_master(
+        run_root / "references" / "three-view-master.png",
+        run_root / "references",
+    )
+    manifest = _build_passing_manifest(run_root)
+    preview_464 = run_root / "selected" / "preview-464.png"
+    _save_transparent_swatch(preview_464, (464, 464))
+    payload = json.loads(manifest.read_text())
+    payload["final"]["preview464"].update(inspect_png(preview_464))
+    manifest.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="preview"):
+        verify_manifest(manifest, run_root)
+
+
+def test_build_manifest_rejects_invalid_preview_relationship(tmp_path: Path) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    _save_transparent_swatch(run_root / "selected" / "preview-58.png", (57, 58))
+
+    with pytest.raises(ValueError, match="58x58"):
+        _build_passing_manifest(run_root)
+
+    render_previews(run_root / "selected" / "character-hd.png", run_root / "selected")
+    _save_transparent_swatch(run_root / "selected" / "preview-464.png", (464, 464))
+
+    with pytest.raises(ValueError, match="preview"):
+        _build_passing_manifest(run_root)
+
+
+def test_cli_reports_malformed_manifest_as_a_validation_error(tmp_path: Path) -> None:
+    run_root = _prepare_passing_run(tmp_path)
+    manifest = _build_passing_manifest(run_root)
+    payload = json.loads(manifest.read_text())
+    payload["references"] = None
+    manifest.write_text(json.dumps(payload))
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "tools/visual_prototype.py",
+            "verify",
+            str(manifest),
+            str(run_root),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 2
+    assert "VISUAL PROTOTYPE ERROR" in result.stderr

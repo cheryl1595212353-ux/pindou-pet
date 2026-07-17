@@ -29,6 +29,14 @@ FORBIDDEN_KEY_PARTS = (
     "imagebytes",
     "image_bytes",
 )
+REQUIRED_REVIEW_FLAGS = (
+    "sameIdentity",
+    "viewsCorrect",
+    "anatomicalMarkingsStable",
+    "fullBodyVisible",
+    "noExtraLimbs",
+    "photographicNotBeadArt",
+)
 
 
 class VisualPrototypeArgumentParser(argparse.ArgumentParser):
@@ -182,6 +190,146 @@ def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
     os.replace(temporary, path)
 
 
+def _require_mapping(value: Any, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} must be an object")
+    return value
+
+
+def _require_list(value: Any, label: str) -> list[Any]:
+    if not isinstance(value, list):
+        raise ValueError(f"{label} must be a list")
+    return value
+
+
+def _require_artifact(
+    value: Any,
+    run_root: Path,
+    label: str,
+    *,
+    png: bool = False,
+    require_alpha: bool = False,
+) -> Path:
+    artifact = _require_mapping(value, f"{label} artifact")
+    relative_value = artifact.get("path")
+    sha256 = artifact.get("sha256")
+    if not isinstance(relative_value, str) or not relative_value:
+        raise ValueError(f"{label} artifact path must be a non-empty string")
+    if not isinstance(sha256, str) or not SHA256_RE.fullmatch(sha256):
+        raise ValueError(f"{label} artifact sha256 is malformed")
+
+    relative = PurePosixPath(relative_value)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError(f"{label} artifact path must be relative and contained")
+    path = (run_root.resolve() / Path(*relative.parts)).resolve()
+    if not path.is_relative_to(run_root.resolve()):
+        raise ValueError(f"{label} artifact path escapes run root")
+    if not path.is_file():
+        raise ValueError(f"{label} artifact is missing: {relative}")
+    if sha256_file(path) != sha256:
+        raise ValueError(f"{label} artifact hash mismatch: {relative}")
+
+    if png:
+        expected_png = {
+            "width": artifact.get("width"),
+            "height": artifact.get("height"),
+            "hasRealAlpha": artifact.get("hasRealAlpha"),
+        }
+        if (
+            type(expected_png["width"]) is not int
+            or expected_png["width"] <= 0
+            or type(expected_png["height"]) is not int
+            or expected_png["height"] <= 0
+            or type(expected_png["hasRealAlpha"]) is not bool
+        ):
+            raise ValueError(f"{label} PNG artifact metadata is malformed")
+        actual_png = inspect_png(path, require_alpha=require_alpha)
+        if any(actual_png[key] != expected_png[key] for key in expected_png):
+            raise ValueError(f"{label} PNG artifact metadata mismatch")
+    return path
+
+
+def _assert_three_view_master(master: Path) -> None:
+    evidence = inspect_png(master)
+    if evidence["width"] % len(VIEWS) != 0:
+        raise ValueError("three-view master width must divide into three equal panels")
+    if evidence["width"] // len(VIEWS) < 512 or evidence["height"] < 512:
+        raise ValueError("every reference panel must be at least 512x512")
+
+
+def _assert_reference_provenance(
+    master: Path,
+    references: Any,
+    run_root: Path,
+) -> None:
+    reference_entries = _require_list(references, "references")
+    if len(reference_entries) != len(VIEWS):
+        raise ValueError("references must contain the complete frozen view set")
+    _assert_three_view_master(master)
+
+    try:
+        with Image.open(master) as source:
+            source.load()
+            panel_width = source.width // len(VIEWS)
+            for index, (view, filename) in enumerate(VIEWS):
+                entry = _require_mapping(reference_entries[index], "reference")
+                if entry.get("view") != view:
+                    raise ValueError("reference order is invalid")
+                reference_path = _require_artifact(
+                    entry,
+                    run_root,
+                    f"reference {view}",
+                    png=True,
+                )
+                expected_path = (run_root / "references" / filename).resolve()
+                if reference_path != expected_path:
+                    raise ValueError("reference path does not match frozen view order")
+                expected = source.crop(
+                    (index * panel_width, 0, (index + 1) * panel_width, source.height)
+                ).convert("RGBA")
+                with Image.open(reference_path) as reference:
+                    actual = reference.convert("RGBA")
+                    if actual.size != expected.size or actual.tobytes() != expected.tobytes():
+                        raise ValueError("reference pixels do not match the three-view master")
+    except (OSError, UnidentifiedImageError) as exc:
+        raise ValueError("three-view reference evidence is unreadable") from exc
+
+
+def _assert_preview_contract(preview_58: Path, preview_464: Path) -> None:
+    preview_58_evidence = inspect_png(preview_58, require_alpha=True)
+    preview_464_evidence = inspect_png(preview_464, require_alpha=True)
+    if (preview_58_evidence["width"], preview_58_evidence["height"]) != (58, 58):
+        raise ValueError("preview-58 must be exactly 58x58")
+    if (preview_464_evidence["width"], preview_464_evidence["height"]) != (464, 464):
+        raise ValueError("preview-464 must be exactly 464x464")
+    with Image.open(preview_58) as source, Image.open(preview_464) as preview:
+        expected = source.convert("RGBA").resize((464, 464), Image.Resampling.NEAREST)
+        if expected.tobytes() != preview.convert("RGBA").tobytes():
+            raise ValueError("preview-464 must be the nearest-neighbor 8x preview-58")
+
+
+def _validate_reference_review_shape(review: Any) -> dict[str, Any]:
+    review_object = _require_mapping(review, "reference review")
+    if type(review_object.get("pass")) is not bool:
+        raise ValueError("reference review pass must be a boolean")
+    if any(type(review_object.get(flag)) is not bool for flag in REQUIRED_REVIEW_FLAGS):
+        raise ValueError("reference review flags must be booleans")
+    if not isinstance(review_object.get("violations"), list):
+        raise ValueError("reference review violations must be a list")
+    return review_object
+
+
+def _assert_reference_review(review: Any) -> dict[str, Any]:
+    review_object = _validate_reference_review_shape(review)
+    if review_object.get("pass") is not True:
+        raise ValueError("reference review must pass before prototype PASS")
+    if any(review_object.get(flag) is not True for flag in REQUIRED_REVIEW_FLAGS):
+        raise ValueError("reference review flags must all pass before prototype PASS")
+    if review_object.get("violations") != []:
+        raise ValueError("reference review violations must be empty before prototype PASS")
+    return review_object
+
+
 def build_manifest(
     run_root: Path,
     *,
@@ -203,20 +351,6 @@ def build_manifest(
     master = run_root / "references" / "three-view-master.png"
     review_path = run_root / "reviews" / "reference-consistency.json"
     review = _load_json(review_path)
-    required_review_flags = (
-        "sameIdentity",
-        "viewsCorrect",
-        "anatomicalMarkingsStable",
-        "fullBodyVisible",
-        "noExtraLimbs",
-        "photographicNotBeadArt",
-    )
-    review_pass = (
-        review.get("pass") is True
-        and all(review.get(flag) is True for flag in required_review_flags)
-        and review.get("violations") == []
-    )
-
     reference_paths = [run_root / "references" / filename for _, filename in VIEWS]
     present_references = [path.exists() for path in reference_paths]
     if any(present_references) and not all(present_references):
@@ -278,11 +412,14 @@ def build_manifest(
     }
 
     if decision == "VISUAL_PROTOTYPE_PASS":
-        if not review_pass:
-            raise ValueError("reference review must pass before prototype PASS")
+        _assert_reference_review(review)
         if not user_approved or selected_candidate_id not in candidate_ids:
             raise ValueError("prototype PASS requires an approved existing candidate")
+        _assert_reference_provenance(master, references, run_root)
         selected_dir = run_root / "selected"
+        preview_58 = selected_dir / "preview-58.png"
+        preview_464 = selected_dir / "preview-464.png"
+        _assert_preview_contract(preview_58, preview_464)
         payload["final"] = {
             "character": _relative_artifact(
                 selected_dir / "character-hd.png",
@@ -291,13 +428,13 @@ def build_manifest(
                 require_alpha=True,
             ),
             "preview58": _relative_artifact(
-                selected_dir / "preview-58.png",
+                preview_58,
                 run_root,
                 png=True,
                 require_alpha=True,
             ),
             "preview464": _relative_artifact(
-                selected_dir / "preview-464.png",
+                preview_464,
                 run_root,
                 png=True,
                 require_alpha=True,
@@ -317,58 +454,109 @@ def build_manifest(
     return manifest
 
 
-def _walk_artifacts(value: Any) -> list[dict[str, Any]]:
-    artifacts: list[dict[str, Any]] = []
-    if isinstance(value, dict):
-        if "path" in value and "sha256" in value:
-            artifacts.append(value)
-        for child in value.values():
-            artifacts.extend(_walk_artifacts(child))
-    elif isinstance(value, list):
-        for child in value:
-            artifacts.extend(_walk_artifacts(child))
-    return artifacts
-
-
 def verify_manifest(manifest_path: Path, run_root: Path) -> dict[str, Any]:
     payload = _load_json(manifest_path)
     _assert_manifest_safe(payload)
     if payload.get("schemaVersion") != 1:
         raise ValueError("manifest schemaVersion must be 1")
-    if payload.get("decision") not in DECISIONS:
+    decision = payload.get("decision")
+    if decision not in DECISIONS:
         raise ValueError("manifest decision is invalid")
-    expected_views = [view for view, _ in VIEWS]
-    actual_views = [item.get("view") for item in payload.get("references", [])]
-    if payload["decision"] == "VISUAL_PROTOTYPE_PASS" and actual_views != expected_views:
-        raise ValueError("PASS reference order is invalid")
-    if payload["decision"] == "STOP_REVISE_STYLE" and actual_views not in (
-        [],
-        expected_views,
+    master_attempt_count = payload.get("masterAttemptCount")
+    if (
+        type(master_attempt_count) is not int
+        or not 1 <= master_attempt_count <= 3
     ):
-        raise ValueError("STOP reference evidence is partial or out of order")
-    if len(payload.get("candidates", [])) > 3:
-        raise ValueError("manifest contains more than three candidates")
+        raise ValueError("manifest masterAttemptCount must be between 1 and 3")
 
     root = run_root.resolve()
-    for artifact in _walk_artifacts(payload):
-        relative = PurePosixPath(artifact["path"])
-        if relative.is_absolute() or ".." in relative.parts:
-            raise ValueError("artifact path must be relative and contained")
-        if not SHA256_RE.fullmatch(artifact["sha256"]):
-            raise ValueError("artifact sha256 is malformed")
-        path = (root / Path(*relative.parts)).resolve()
-        if not path.is_relative_to(root):
-            raise ValueError("artifact path escapes run root")
-        if not path.is_file():
-            raise ValueError(f"artifact is missing: {relative}")
-        if sha256_file(path) != artifact["sha256"]:
-            raise ValueError(f"artifact hash mismatch: {relative}")
+    _require_artifact(payload.get("identity"), root, "identity")
+    _require_artifact(payload.get("referencePrompt"), root, "reference prompt")
+    master = _require_artifact(payload.get("master"), root, "master", png=True)
+    review = _validate_reference_review_shape(payload.get("referenceReview"))
+    review_evidence = _require_artifact(
+        review.get("evidence"), root, "reference review evidence"
+    )
+    review_payload = {key: value for key, value in review.items() if key != "evidence"}
+    if review_payload != _load_json(review_evidence):
+        raise ValueError("reference review does not match its evidence artifact")
 
-    if payload["decision"] == "VISUAL_PROTOTYPE_PASS":
-        if payload.get("selection", {}).get("approved") is not True:
-            raise ValueError("PASS manifest lacks user approval")
-        if "final" not in payload:
-            raise ValueError("PASS manifest lacks final artifacts")
+    references = _require_list(payload.get("references"), "references")
+    expected_views = [view for view, _ in VIEWS]
+    actual_views: list[str] = []
+    for reference in references:
+        reference_object = _require_mapping(reference, "reference")
+        view = reference_object.get("view")
+        if not isinstance(view, str):
+            raise ValueError("reference view must be a string")
+        actual_views.append(view)
+
+    candidates = _require_list(payload.get("candidates"), "candidates")
+    if len(candidates) > 3:
+        raise ValueError("manifest contains more than three candidates")
+    candidate_ids: set[str] = set()
+    for candidate in candidates:
+        candidate_object = _require_mapping(candidate, "candidate")
+        candidate_id = candidate_object.get("candidateId")
+        if not isinstance(candidate_id, str) or not candidate_id:
+            raise ValueError("candidateId must be a non-empty string")
+        if candidate_id in candidate_ids:
+            raise ValueError("candidate IDs must be unique")
+        candidate_ids.add(candidate_id)
+        _require_artifact(
+            candidate_object.get("image"),
+            root,
+            f"candidate {candidate_id} image",
+            png=True,
+            require_alpha=True,
+        )
+        _require_artifact(
+            candidate_object.get("prompt"), root, f"candidate {candidate_id} prompt"
+        )
+
+    selection = _require_mapping(payload.get("selection"), "selection")
+    approved = selection.get("approved")
+    selected_candidate_id = selection.get("candidateId")
+    correction_count = selection.get("correctionCount")
+    if type(approved) is not bool:
+        raise ValueError("selection approved must be a boolean")
+    if selected_candidate_id is not None and not isinstance(selected_candidate_id, str):
+        raise ValueError("selection candidateId must be a string or null")
+    if type(correction_count) is not int or correction_count not in (0, 1):
+        raise ValueError("selection correctionCount must be 0 or 1")
+    if "correctionPrompt" in payload:
+        _require_artifact(payload["correctionPrompt"], root, "correction prompt")
+
+    if decision == "VISUAL_PROTOTYPE_PASS":
+        _assert_reference_review(review)
+        _assert_reference_provenance(master, references, root)
+        if not candidate_ids:
+            raise ValueError("PASS manifest requires at least one candidate")
+        if approved is not True or selected_candidate_id not in candidate_ids:
+            raise ValueError("PASS manifest selection must approve an existing candidate")
+        final = _require_mapping(payload.get("final"), "final")
+        _require_artifact(
+            final.get("character"), root, "final character", png=True, require_alpha=True
+        )
+        preview_58 = _require_artifact(
+            final.get("preview58"), root, "final preview58", png=True, require_alpha=True
+        )
+        preview_464 = _require_artifact(
+            final.get("preview464"), root, "final preview464", png=True, require_alpha=True
+        )
+        _assert_preview_contract(preview_58, preview_464)
+        if correction_count == 1 and "correctionPrompt" not in payload:
+            raise ValueError("PASS manifest lacks correction prompt")
+        if correction_count == 0 and "correctionPrompt" in payload:
+            raise ValueError("PASS manifest has an unexpected correction prompt")
+    else:
+        if actual_views not in ([], expected_views):
+            raise ValueError("STOP reference evidence is partial or out of order")
+        if actual_views:
+            _assert_reference_provenance(master, references, root)
+        if approved:
+            raise ValueError("STOP manifest cannot claim user approval")
+
     return payload
 
 
