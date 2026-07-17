@@ -5,7 +5,7 @@
   "markingsStable": true,
   "noBeadOrVoxelMaterials": true,
   "noExtraLimbs": true,
-  "notes": "The candidate preserves identity on a single flat square-pixel grid.",
+  "notes": "The candidate preserves identity on one flat square-pixel grid; controlled fine square-pixel texture is allowed when larger color clusters remain readable.",
   "pass": true,
   "poseCorrect": true,
   "sameIdentity": true,

@@ -72,6 +72,19 @@ def test_character_prompt_freezes_the_2p5d_square_pixel_contract() -> None:
     assert "plastic fuse-bead units" not in normalized_prompt
 
 
+def test_character_prompt_allows_the_user_approved_candidate_03_microtexture() -> None:
+    prompt = (EXPERIMENT / "prompts" / "character-candidates.md").read_text()
+    normalized_prompt = " ".join(prompt.lower().split())
+
+    assert (
+        "controlled fine single-cell square-pixel tonal accents may appear across "
+        "the coat" in normalized_prompt
+    )
+    assert "larger color clusters remain readable" in normalized_prompt
+    assert "random color-speckle dithering" in normalized_prompt
+    assert "dithering noise" not in normalized_prompt
+
+
 def test_readme_separates_the_rejected_bead_run_from_pixel_v2() -> None:
     readme = (EXPERIMENT / "README.md").read_text()
     normalized_readme = " ".join(readme.lower().split())
@@ -131,6 +144,9 @@ def test_pixel_character_review_example_has_no_ambiguous_pass() -> None:
     assert review["alphaValid"] is True
     assert review["pass"] is True
     assert review["violations"] == []
+    assert (
+        "controlled fine square-pixel texture is allowed" in review["notes"].lower()
+    )
 
 
 def _save_rgb(path: Path, size: tuple[int, int]) -> None:

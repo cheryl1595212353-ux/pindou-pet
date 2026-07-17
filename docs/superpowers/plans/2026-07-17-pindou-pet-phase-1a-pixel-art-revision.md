@@ -1,5 +1,11 @@
 # Phase 1A 2.5D Pixel-Art Revision Implementation Plan
 
+> **Amendment:** Tasks 1–3 were executed under the original clustered-shading
+> contract. After the user explicitly replied `修改规格并接受 03`, the style
+> interpretation and Tasks 4–5 are governed by
+> `2026-07-17-pindou-pet-phase-1a-candidate-03-acceptance.md`. All identity,
+> alpha, one-correction, preview and final-user-gate constraints remain binding.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 复用已通过的合成三花猫三视图，在不使用用户 API Key 的前提下生成、审查并由用户批准一个真正由二维方形像素组成的静态 2.5D 像素宠物原型。

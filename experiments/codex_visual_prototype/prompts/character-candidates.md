@@ -14,16 +14,20 @@ logos, scenery, or extra limbs.
 Render the character on one screen-aligned 2D raster grid. Build the silhouette,
 features, and markings from flat square pixels with no gaps, holes, individual
 perspective rotation, or physical depth between cells. Use hard stair-stepped
-edges and coherent color clusters. Create slight 2.5D volume only through
-limited-palette clustered highlights and shadows across larger forms; do not
-bevel, extrude, light, or texture each pixel as a separate object.
+edges and coherent color clusters. Create slight 2.5D volume primarily through
+limited-palette clustered highlights and shadows across larger forms. Controlled
+fine single-cell square-pixel tonal accents may appear across the coat as a
+secondary surface treatment, provided every mark stays screen-aligned and the
+larger color clusters remain readable. Do not bevel, extrude, light, or texture
+each pixel as a separate physical object.
 
 Absolutely no fuse beads, perler beads, round pellets, bead holes, plastic
 tubes, pegboards, mosaic tiles, raised cubes, Lego, Minecraft, voxel sculpture,
 3D model, smooth vector edges, photorealistic fur, antialiased fur fringe,
-dithering noise, floating pixels, branding, or background shadow. Output a PNG
-with real alpha transparency; a white, solid-color, checkerboard, or simulated
-transparent background is invalid.
+continuous photographic gradients, random color-speckle dithering, floating
+pixels, branding, or background shadow. Output a PNG with real alpha
+transparency; a white, solid-color, checkerboard, or simulated transparent
+background is invalid.
 
 The later 58x58 image is a PIXEL_ART_VISUAL_PROXY only. It is not yet a layered
 sprite sheet or animation asset.
