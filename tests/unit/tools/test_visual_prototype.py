@@ -1,6 +1,19 @@
 import json
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
+import pytest
+from PIL import Image
+
+from tools.visual_prototype import (
+    build_manifest,
+    inspect_png,
+    render_previews,
+    split_master,
+    verify_manifest,
+)
 
 ROOT = Path(__file__).resolve().parents[3]
 EXPERIMENT = ROOT / "experiments" / "codex_visual_prototype"
@@ -79,3 +92,193 @@ def test_reference_review_example_has_no_ambiguous_pass() -> None:
     assert review["pass"] is True
     assert all(review[key] is True for key in required)
     assert review["violations"] == []
+
+
+def _save_rgb(path: Path, size: tuple[int, int]) -> None:
+    Image.new("RGB", size, (220, 220, 220)).save(path, format="PNG")
+
+
+def _save_transparent_character(path: Path) -> None:
+    image = Image.new("RGBA", (120, 90), (0, 0, 0, 0))
+    for x in range(20, 100):
+        for y in range(10, 85):
+            image.putpixel((x, y), (240, 150, 40, 255))
+    image.save(path, format="PNG")
+
+
+def test_split_master_produces_the_frozen_view_order(tmp_path: Path) -> None:
+    master = tmp_path / "master.png"
+    _save_rgb(master, (1536, 512))
+
+    evidence = split_master(master, tmp_path / "references")
+
+    assert [item["view"] for item in evidence] == [
+        "FRONT",
+        "CAT_LEFT_FRONT_45",
+        "CAT_RIGHT_FRONT_45",
+    ]
+    assert [item["path"].name for item in evidence] == [
+        "front.png",
+        "cat-left-front-45.png",
+        "cat-right-front-45.png",
+    ]
+    assert all(item["width"] == 512 and item["height"] == 512 for item in evidence)
+
+
+def test_split_master_rejects_panels_smaller_than_512(tmp_path: Path) -> None:
+    master = tmp_path / "master.png"
+    _save_rgb(master, (1200, 512))
+
+    with pytest.raises(ValueError, match="512"):
+        split_master(master, tmp_path / "references")
+
+
+def test_candidate_requires_real_alpha_and_proxy_is_nearest_neighbor(
+    tmp_path: Path,
+) -> None:
+    opaque = tmp_path / "opaque.png"
+    _save_rgb(opaque, (120, 90))
+    with pytest.raises(ValueError, match="alpha"):
+        inspect_png(opaque, require_alpha=True)
+
+    character = tmp_path / "character.png"
+    _save_transparent_character(character)
+    preview_58, preview_464 = render_previews(character, tmp_path / "selected")
+
+    assert Image.open(preview_58).size == (58, 58)
+    assert Image.open(preview_464).size == (464, 464)
+    assert Image.open(preview_464).resize((58, 58), Image.Resampling.NEAREST).tobytes() == (
+        Image.open(preview_58).tobytes()
+    )
+
+
+def test_manifest_rejects_absolute_paths_and_verifies_hashes(tmp_path: Path) -> None:
+    run_root = tmp_path / "synthetic-cat-01"
+    subdirectories = (
+        "identity",
+        "prompts",
+        "references",
+        "reviews",
+        "candidates",
+        "selected",
+    )
+    for name in subdirectories:
+        (run_root / name).mkdir(parents=True, exist_ok=True)
+
+    (run_root / "identity" / "identity-card.json").write_text("{}")
+    (run_root / "prompts" / "reference-master.md").write_text("reference")
+    (run_root / "prompts" / "candidate-01.md").write_text("candidate")
+    _save_rgb(run_root / "references" / "three-view-master.png", (1536, 512))
+    split_master(
+        run_root / "references" / "three-view-master.png",
+        run_root / "references",
+    )
+    (run_root / "reviews" / "reference-consistency.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": 1,
+                "sameIdentity": True,
+                "viewsCorrect": True,
+                "anatomicalMarkingsStable": True,
+                "fullBodyVisible": True,
+                "noExtraLimbs": True,
+                "photographicNotBeadArt": True,
+                "pass": True,
+                "violations": [],
+                "notes": "pass",
+            }
+        )
+    )
+    _save_transparent_character(run_root / "candidates" / "candidate-01.png")
+    shutil.copyfile(
+        run_root / "candidates" / "candidate-01.png",
+        run_root / "selected" / "character-hd.png",
+    )
+    render_previews(
+        run_root / "selected" / "character-hd.png",
+        run_root / "selected",
+    )
+
+    manifest = build_manifest(
+        run_root,
+        master_attempt_count=1,
+        decision="VISUAL_PROTOTYPE_PASS",
+        selected_candidate_id="candidate-01",
+        user_approved=True,
+        correction_count=0,
+    )
+    assert verify_manifest(manifest, run_root)["decision"] == "VISUAL_PROTOTYPE_PASS"
+
+    payload = json.loads(manifest.read_text())
+    payload["identity"]["path"] = "/Users/example/private.json"
+    manifest.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="absolute"):
+        verify_manifest(manifest, run_root)
+
+
+def test_stop_manifest_allows_failure_before_references_or_candidates(
+    tmp_path: Path,
+) -> None:
+    run_root = tmp_path / "synthetic-cat-01"
+    subdirectories = (
+        "identity",
+        "prompts",
+        "references",
+        "reviews",
+        "candidates",
+        "selected",
+    )
+    for name in subdirectories:
+        (run_root / name).mkdir(parents=True, exist_ok=True)
+
+    (run_root / "identity" / "identity-card.json").write_text("{}")
+    (run_root / "prompts" / "reference-master.md").write_text("reference")
+    _save_rgb(run_root / "references" / "three-view-master.png", (1200, 512))
+    (run_root / "reviews" / "reference-consistency.json").write_text(
+        json.dumps(
+            {
+                "schemaVersion": 1,
+                "sameIdentity": False,
+                "viewsCorrect": False,
+                "anatomicalMarkingsStable": False,
+                "fullBodyVisible": False,
+                "noExtraLimbs": True,
+                "photographicNotBeadArt": True,
+                "pass": False,
+                "violations": ["master panels failed the minimum crop contract"],
+                "notes": "stopped before candidate generation",
+            }
+        )
+    )
+
+    manifest = build_manifest(
+        run_root,
+        master_attempt_count=3,
+        decision="STOP_REVISE_STYLE",
+        selected_candidate_id=None,
+        user_approved=False,
+        correction_count=0,
+    )
+    assert verify_manifest(manifest, run_root)["references"] == []
+    assert verify_manifest(manifest, run_root)["candidates"] == []
+
+
+def test_cli_argument_validation_uses_the_visual_prototype_error_prefix() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "tools/visual_prototype.py",
+            "manifest",
+            "--master-attempts",
+            "1",
+            "--decision",
+            "INVALID",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 2
+    assert "VISUAL PROTOTYPE ERROR" in result.stderr

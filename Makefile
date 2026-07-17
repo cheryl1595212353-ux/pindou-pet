@@ -20,7 +20,7 @@ redis-smoke:
 		apps/api/tests/infrastructure/test_redis_connection.py -m redis -q
 
 lint:
-	$(PY) -m ruff check apps/api/src apps/api/tests tests
+	$(PY) -m ruff check apps/api/src apps/api/tests tests tools
 
 typecheck:
 	pnpm typecheck
