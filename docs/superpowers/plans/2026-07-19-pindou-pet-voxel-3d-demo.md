@@ -202,7 +202,7 @@ describe("buildTexturePixels", () => {
 
 - [ ] **Step 6: Run the pixel test to prove RED**
 
-Run: `pnpm --filter @pindou/web test -- src/app/voxel/texture.test.ts`  
+Run: `pnpm --filter @pindou/web test -- src/app/voxel/texture.test.ts`
 Expected: FAIL because `./texture` does not exist.
 
 - [ ] **Step 7: Implement pure pixels and a nearest-neighbor CanvasTexture**
@@ -311,7 +311,7 @@ describe("cat animation", () => {
 
 - [ ] **Step 2: Run the test to prove RED**
 
-Run: `pnpm --filter @pindou/web test -- src/app/voxel/animation.test.ts`  
+Run: `pnpm --filter @pindou/web test -- src/app/voxel/animation.test.ts`
 Expected: FAIL because `./animation` does not exist.
 
 - [ ] **Step 3: Implement the pure state sampler**
@@ -355,7 +355,7 @@ export function sampleCatMotion(state: AnimationState, nowMs: number, reducedMot
 
 - [ ] **Step 4: Run animation tests GREEN**
 
-Run: `pnpm --filter @pindou/web test -- src/app/voxel/animation.test.ts`  
+Run: `pnpm --filter @pindou/web test -- src/app/voxel/animation.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Build the block hierarchy**
@@ -457,7 +457,7 @@ describe("VoxelCatStage", () => {
 
 - [ ] **Step 2: Run tests RED**
 
-Run: `pnpm --filter @pindou/web test -- src/app/voxel/camera.test.ts src/app/voxel/VoxelCatStage.test.tsx`  
+Run: `pnpm --filter @pindou/web test -- src/app/voxel/camera.test.ts src/app/voxel/VoxelCatStage.test.tsx`
 Expected: FAIL because both modules are missing.
 
 - [ ] **Step 3: Implement camera data and the scene**
@@ -579,7 +579,7 @@ Add a second test that clicks `测试猫：奶盖，奶油布偶` and `俯视视
 
 - [ ] **Step 2: Run the page test RED**
 
-Run: `pnpm --filter @pindou/web test -- src/app/App.test.tsx`  
+Run: `pnpm --filter @pindou/web test -- src/app/App.test.tsx`
 Expected: FAIL because the old 2D copy/upload controls are still present.
 
 - [ ] **Step 3: Refactor `PixelPetStudio` into a thin 3D coordinator**
@@ -666,7 +666,7 @@ Start or reuse the Vite server and verify at `http://127.0.0.1:5173/`:
 
 - [ ] **Step 7: Run the full repository gate**
 
-Run: `make check`  
+Run: `make check`
 Expected: Python tests, Web tests, contracts, typecheck and production build all pass; the Redis integration test may remain explicitly skipped under the established Phase 0 rule.
 
 - [ ] **Step 8: Commit Task 4**
