@@ -12,11 +12,14 @@
   },
   "dependencies": {
     "@pindou/contracts": "workspace:*",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
     "konva": "^10.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-konva": "^19.2.0",
-    "react-router-dom": "^7.9.0"
+    "react-router-dom": "^7.9.0",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
@@ -24,6 +27,7 @@
     "@testing-library/react": "^16.3.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@types/three": "^0.185.1",
     "@vitejs/plugin-react": "^5.0.0",
     "jsdom": "^27.0.0",
     "typescript": "^5.9.0",
