@@ -21,12 +21,14 @@ describe("product shell", () => {
 
     expect(screen.getByRole("heading", { name: "把宠物变成像素伙伴" })).toBeVisible();
     expect(screen.getByLabelText("上传宠物图片")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /测试猫：/ })).toHaveLength(5);
+    expect(screen.getByText("5 只 / 15 张")).toBeVisible();
   });
 
   it("provides the four approved route boundaries", () => {
     setViewport(1440, 900);
     const routes = [
-      ["/", "选择宠物照片"],
+      ["/", "选择测试猫"],
       ["/projects/demo/edit", "图层与拼豆编辑"],
       ["/projects/demo/room", "互动房间"],
       ["/projects/demo/export", "导出预览"],

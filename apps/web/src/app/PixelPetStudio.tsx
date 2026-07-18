@@ -2,6 +2,22 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const MAX_CANVAS_SIDE = 760;
 
+type ViewAngle = "front" | "side" | "top";
+
+const DEMO_CATS = [
+  { id: "cat-01", name: "小满", detail: "三花短毛" },
+  { id: "cat-02", name: "橘子", detail: "橘色长毛" },
+  { id: "cat-03", name: "墨墨", detail: "黑白燕尾服" },
+  { id: "cat-04", name: "银豆", detail: "银灰英短" },
+  { id: "cat-05", name: "奶盖", detail: "奶油布偶" },
+] as const;
+
+const VIEW_ANGLES: ReadonlyArray<{ id: ViewAngle; label: string }> = [
+  { id: "front", label: "正面" },
+  { id: "side", label: "侧面" },
+  { id: "top", label: "俯视" },
+];
+
 function quantize(value: number, levels: number): number {
   const step = 255 / (levels - 1);
   return Math.round(Math.round(value / step) * step);
@@ -11,6 +27,9 @@ export function PixelPetStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [fileName, setFileName] = useState("");
+  const [selectedCatId, setSelectedCatId] = useState<string | null>(DEMO_CATS[0].id);
+  const [selectedAngle, setSelectedAngle] = useState<ViewAngle>("front");
+  const [imageError, setImageError] = useState(false);
   const [pixelSize, setPixelSize] = useState(8);
   const [colorLevels, setColorLevels] = useState(6);
   const [removeBackground, setRemoveBackground] = useState(false);
@@ -67,6 +86,26 @@ export function PixelPetStudio() {
 
   useEffect(() => renderPixelPet(), [renderPixelPet]);
 
+  const loadImageSource = useCallback((src: string, name: string) => {
+    const nextImage = new Image();
+    nextImage.onload = () => {
+      setImage(nextImage);
+      setFileName(name);
+      setImageError(false);
+    };
+    nextImage.onerror = () => setImageError(true);
+    nextImage.src = src;
+  }, []);
+
+  useEffect(() => {
+    if (selectedCatId !== null) {
+      loadImageSource(
+        `/demo-cats/${selectedCatId}/${selectedAngle}.png`,
+        `${selectedCatId}-${selectedAngle}.png`,
+      );
+    }
+  }, [loadImageSource, selectedAngle, selectedCatId]);
+
   function loadFile(file: File | undefined) {
     if (file === undefined || !file.type.startsWith("image/")) return;
     const objectUrl = URL.createObjectURL(file);
@@ -74,6 +113,12 @@ export function PixelPetStudio() {
     nextImage.onload = () => {
       setImage(nextImage);
       setFileName(file.name);
+      setSelectedCatId(null);
+      setImageError(false);
+      URL.revokeObjectURL(objectUrl);
+    };
+    nextImage.onerror = () => {
+      setImageError(true);
       URL.revokeObjectURL(objectUrl);
     };
     nextImage.src = objectUrl;
@@ -103,9 +148,43 @@ export function PixelPetStudio() {
   return (
     <section className="studio" aria-label="像素宠物工作台">
       <aside className="studio-controls">
-        <p className="eyebrow">本地即时生成 · 图片不会上传</p>
+        <p className="eyebrow">内置测试猫库 · AI 生成素材</p>
         <h1>把宠物变成<br />像素伙伴</h1>
-        <p className="studio-intro">上传一张照片，立即生成可下载、可点击互动的像素宠物。</p>
+        <p className="studio-intro">先用五只测试猫体验三种角度，再决定下一步怎么改。</p>
+
+        <div className="library-heading">
+          <strong>选择测试猫</strong>
+          <span>5 只 / 15 张</span>
+        </div>
+        <div className="cat-library" aria-label="内置测试猫库">
+          {DEMO_CATS.map((cat) => (
+            <button
+              aria-label={`测试猫：${cat.name}，${cat.detail}`}
+              aria-pressed={selectedCatId === cat.id}
+              className="cat-option"
+              key={cat.id}
+              onClick={() => setSelectedCatId(cat.id)}
+              type="button"
+            >
+              <img alt="" src={`/demo-cats/${cat.id}/front.png`} />
+              <span><strong>{cat.name}</strong><small>{cat.detail}</small></span>
+            </button>
+          ))}
+        </div>
+
+        <div className="angle-switcher" aria-label="照片角度">
+          {VIEW_ANGLES.map((angle) => (
+            <button
+              aria-pressed={selectedAngle === angle.id}
+              disabled={selectedCatId === null}
+              key={angle.id}
+              onClick={() => setSelectedAngle(angle.id)}
+              type="button"
+            >
+              {angle.label}
+            </button>
+          ))}
+        </div>
 
         <label className="upload-button">
           <input
@@ -114,10 +193,11 @@ export function PixelPetStudio() {
             type="file"
             onChange={(event) => loadFile(event.target.files?.[0])}
           />
-          <span>{image === null ? "选择宠物照片" : "更换照片"}</span>
+          <span>或上传自己的照片</span>
           <strong>↗</strong>
         </label>
-        {fileName && <p className="file-name">当前：{fileName}</p>}
+        {fileName && <p className="file-name">当前素材：{fileName}</p>}
+        {imageError && <p className="image-error" role="alert">测试图片还在生成，请稍后刷新。</p>}
 
         <div className="control-group">
           <label htmlFor="pixel-size"><span>像素颗粒</span><output>{pixelSize}px</output></label>
