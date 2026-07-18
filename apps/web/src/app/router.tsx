@@ -7,6 +7,8 @@ import {
   type RouteObject,
 } from "react-router-dom";
 
+import { PixelPetStudio } from "./PixelPetStudio";
+
 const DESKTOP_EDITOR_MIN_WIDTH = 1280;
 
 function ProductFrame() {
@@ -19,7 +21,7 @@ function ProductFrame() {
           </span>
           拼豆宠物
         </Link>
-        <span className="phase-label">Web MVP · Phase 0</span>
+        <span className="phase-label">可用体验版 · LOCAL</span>
       </header>
       <main className="page-shell">
         <Outlet />
@@ -44,13 +46,7 @@ function PlaceholderPage({ eyebrow, title, description }: PageCopy) {
 }
 
 function HomePage() {
-  return (
-    <PlaceholderPage
-      eyebrow="从三张照片开始"
-      title="拼豆宠物"
-      description="创建一只猫咪角色"
-    />
-  );
+  return <PixelPetStudio />;
 }
 
 function useDesktopEditorAllowed(): boolean {
@@ -133,4 +129,3 @@ export function createAppRouter(initialPath?: string) {
   }
   return createBrowserRouter(routes);
 }
-

@@ -19,14 +19,14 @@ describe("product shell", () => {
   it("renders the approved product shell", () => {
     render(<App initialPath="/" />);
 
-    expect(screen.getByRole("heading", { name: "拼豆宠物" })).toBeVisible();
-    expect(screen.getByText("创建一只猫咪角色")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "把宠物变成像素伙伴" })).toBeVisible();
+    expect(screen.getByLabelText("上传宠物图片")).toBeInTheDocument();
   });
 
   it("provides the four approved route boundaries", () => {
     setViewport(1440, 900);
     const routes = [
-      ["/", "创建一只猫咪角色"],
+      ["/", "选择宠物照片"],
       ["/projects/demo/edit", "图层与拼豆编辑"],
       ["/projects/demo/room", "互动房间"],
       ["/projects/demo/export", "导出预览"],
