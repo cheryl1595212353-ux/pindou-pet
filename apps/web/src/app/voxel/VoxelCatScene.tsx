@@ -7,6 +7,37 @@ import type { CatAppearance } from "./appearances";
 import { CAMERA_PRESETS, type CameraPreset } from "./camera";
 import { VoxelCatModel } from "./VoxelCatModel";
 
+const IS_DEVELOPMENT = (
+  import.meta as ImportMeta & { readonly env: { readonly DEV: boolean } }
+).env.DEV;
+
+export interface FrameSample {
+  readonly averageFps: number;
+  readonly elapsedSeconds: number;
+  readonly frames: number;
+}
+
+function FrameRateProbe({ onSample }: { readonly onSample: (sample: FrameSample) => void }) {
+  const elapsedSeconds = useRef(0);
+  const frames = useRef(0);
+  const lastReportedSecond = useRef(0);
+
+  useFrame((_state, delta) => {
+    elapsedSeconds.current += delta;
+    frames.current += 1;
+    if (elapsedSeconds.current - lastReportedSecond.current < 1) return;
+
+    lastReportedSecond.current = elapsedSeconds.current;
+    onSample({
+      averageFps: frames.current / elapsedSeconds.current,
+      elapsedSeconds: elapsedSeconds.current,
+      frames: frames.current,
+    });
+  });
+
+  return null;
+}
+
 interface CameraTransition {
   readonly startedAtMs: number;
   readonly durationMs: number;
@@ -74,12 +105,12 @@ function CameraController({
       dampingFactor={0.08}
       enablePan={false}
       minDistance={6}
-      maxDistance={14}
+      maxDistance={16}
       minPolarAngle={0.08}
       maxPolarAngle={Math.PI / 2 - 0.06}
       rotateSpeed={0.72}
       zoomSpeed={0.82}
-      target={[0, 2.2, 0]}
+      target={[...CAMERA_PRESETS.front.lookAt]}
       onStart={() => {
         transition.current = null;
       }}
@@ -92,6 +123,7 @@ export interface VoxelCatSceneProps {
   readonly cameraPreset: CameraPreset;
   readonly reducedMotion: boolean;
   readonly onHeartChange: (visible: boolean, progress: number) => void;
+  readonly onFrameSample?: (sample: FrameSample) => void;
 }
 
 export function VoxelCatScene({
@@ -99,12 +131,13 @@ export function VoxelCatScene({
   cameraPreset,
   reducedMotion,
   onHeartChange,
+  onFrameSample,
 }: VoxelCatSceneProps) {
   return (
     <Canvas
       aria-label="互动式 3D 方块猫"
       role="img"
-      shadows
+      shadows="basic"
       dpr={[1, 1.5]}
       camera={{ fov: 38, near: 0.1, far: 100, position: [...CAMERA_PRESETS.front.position] }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
@@ -138,6 +171,9 @@ export function VoxelCatScene({
       </mesh>
 
       <CameraController preset={cameraPreset} reducedMotion={reducedMotion} />
+      {IS_DEVELOPMENT && onFrameSample !== undefined && (
+        <FrameRateProbe onSample={onFrameSample} />
+      )}
     </Canvas>
   );
 }

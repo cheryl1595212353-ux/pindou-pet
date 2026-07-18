@@ -1,8 +1,8 @@
-import { Component, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { CatAppearance } from "./appearances";
 import type { CameraPreset } from "./camera";
-import { VoxelCatScene } from "./VoxelCatScene";
+import { VoxelCatScene, type FrameSample } from "./VoxelCatScene";
 
 export function detectWebGLSupport(): boolean {
   try {
@@ -63,6 +63,7 @@ export function VoxelCatStage({
   );
   const [reducedMotion, setReducedMotion] = useState(prefersReducedMotion);
   const [heartVisible, setHeartVisible] = useState(false);
+  const stage = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -76,16 +77,24 @@ export function VoxelCatStage({
     setHeartVisible((current) => (current === visible ? current : visible));
   }, []);
 
+  const handleFrameSample = useCallback((sample: FrameSample) => {
+    if (stage.current === null) return;
+    stage.current.dataset.averageFps = sample.averageFps.toFixed(1);
+    stage.current.dataset.frameCount = String(sample.frames);
+    stage.current.dataset.sampleSeconds = sample.elapsedSeconds.toFixed(1);
+  }, []);
+
   if (!supported) return <SceneFailure />;
 
   return (
-    <div className="voxel-canvas-wrap">
+    <div className="voxel-canvas-wrap" ref={stage}>
       <SceneErrorBoundary>
         <VoxelCatScene
           appearance={appearance}
           cameraPreset={cameraPreset}
           reducedMotion={reducedMotion}
           onHeartChange={handleHeartChange}
+          onFrameSample={handleFrameSample}
         />
       </SceneErrorBoundary>
       {heartVisible && (

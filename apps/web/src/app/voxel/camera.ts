@@ -7,7 +7,7 @@ export interface CameraTarget {
 }
 
 export const CAMERA_PRESETS: Readonly<Record<CameraPreset, CameraTarget>> = {
-  front: { position: [-9.5, 4, 0], lookAt: [0, 2.2, 0], durationMs: 350 },
-  side: { position: [0, 4, 9.5], lookAt: [0, 2.2, 0], durationMs: 350 },
-  top: { position: [0, 11.5, 0.01], lookAt: [0, 2, 0], durationMs: 350 },
+  front: { position: [-12.5, 4.2, 0], lookAt: [0.8, 2.2, 0], durationMs: 350 },
+  side: { position: [0, 4.2, 12.5], lookAt: [0.8, 2.2, 0], durationMs: 350 },
+  top: { position: [0.8, 17, 0.01], lookAt: [0.8, 2, 0], durationMs: 350 },
 };

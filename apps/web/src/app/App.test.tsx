@@ -1,5 +1,19 @@
-import { render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("./voxel/VoxelCatStage", () => ({
+  VoxelCatStage: ({
+    appearance,
+    cameraPreset,
+  }: {
+    appearance: { id: string; name: string };
+    cameraPreset: string;
+  }) => (
+    <div aria-label="互动式 3D 方块猫" role="img">
+      {appearance.name} / {cameraPreset}
+    </div>
+  ),
+}));
 
 import { App } from "./App";
 
@@ -19,10 +33,22 @@ describe("product shell", () => {
   it("renders the approved product shell", () => {
     render(<App initialPath="/" />);
 
-    expect(screen.getByRole("heading", { name: "把宠物变成像素伙伴" })).toBeVisible();
-    expect(screen.getByLabelText("上传宠物图片")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "把宠物变成3D 方块伙伴" })).toBeVisible();
+    expect(screen.getByRole("img", { name: "互动式 3D 方块猫" })).toHaveTextContent("小满 / front");
     expect(screen.getAllByRole("button", { name: /测试猫：/ })).toHaveLength(5);
-    expect(screen.getByText("5 只 / 15 张")).toBeVisible();
+    expect(screen.getByText("5 只 / 15 张参考图")).toBeVisible();
+    expect(screen.queryByLabelText("上传宠物图片")).not.toBeInTheDocument();
+    expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+  });
+
+  it("switches cat appearance and 3D camera presets", () => {
+    render(<App initialPath="/" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "测试猫：橘子，橘色长毛" }));
+    fireEvent.click(screen.getByRole("button", { name: "侧面视角" }));
+
+    expect(screen.getByRole("img", { name: "互动式 3D 方块猫" })).toHaveTextContent("橘子 / side");
+    expect(screen.getByRole("button", { name: "侧面视角" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("provides the four approved route boundaries", () => {
