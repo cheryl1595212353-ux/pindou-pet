@@ -32,6 +32,26 @@ vi.mock("./VoxelCatScene", () => ({
 
 import { getCatAppearance } from "./appearances";
 import { VoxelCatStage } from "./VoxelCatStage";
+import type { PersonalizedVoxelModel } from "./visualHull";
+
+const personalizedModel: PersonalizedVoxelModel = {
+  main: [
+    { grid: [0, 0, 0], position: [0, 0, 0], color: "#765432" },
+    { grid: [1, 0, 0], position: [0.1, 0, 0], color: "#765432" },
+  ],
+  tailSegment: [{ grid: [0, 0, 0], position: [0, 0, 0], color: "#765432" }],
+  voxelSize: 0.094,
+  anchors: {
+    faceX: -1,
+    eyeY: 1,
+    eyeZ: 0.2,
+    noseY: 0.8,
+    tailPivot: [1, 1, 0],
+    tailNextPivotX: 0.4,
+  },
+  bounds: { min: [-1, 0, -0.5], max: [1, 2, 0.5] },
+  palette: ["#765432"],
+};
 
 afterEach(() => {
   sceneHarness.onDetailFallback = undefined;
@@ -39,6 +59,23 @@ afterEach(() => {
 });
 
 describe("VoxelCatStage", () => {
+  it("reports the active personalized voxel count", () => {
+    const view = render(
+      <VoxelCatStage
+        appearance={getCatAppearance("cat-01").appearance}
+        cameraPreset="front"
+        detailMode="detailed"
+        personalizedModel={personalizedModel}
+        webglSupported
+      />,
+    );
+
+    expect(view.container.querySelector(".voxel-canvas-wrap")).toHaveAttribute(
+      "data-voxel-count",
+      "5",
+    );
+  });
+
   it("shows an accessible WebGL failure", () => {
     render(
       <VoxelCatStage

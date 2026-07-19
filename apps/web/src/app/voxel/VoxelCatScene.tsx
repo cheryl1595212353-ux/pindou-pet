@@ -12,6 +12,7 @@ import {
   createFrameRateAccumulator,
 } from "./frameRate";
 import { VoxelCatModel } from "./VoxelCatModel";
+import type { PersonalizedVoxelModel } from "./visualHull";
 
 export interface FrameSample {
   readonly averageFps: number;
@@ -121,6 +122,7 @@ export interface VoxelCatSceneProps {
   readonly appearance: CatAppearance;
   readonly cameraPreset: CameraPreset;
   readonly detailMode: DetailMode;
+  readonly personalizedModel?: PersonalizedVoxelModel;
   readonly reducedMotion: boolean;
   readonly onDetailFallback: () => void;
   readonly onHeartChange: (visible: boolean, progress: number) => void;
@@ -131,6 +133,7 @@ export function VoxelCatScene({
   appearance,
   cameraPreset,
   detailMode,
+  personalizedModel,
   reducedMotion,
   onDetailFallback,
   onHeartChange,
@@ -165,6 +168,7 @@ export function VoxelCatScene({
       <VoxelCatModel
         appearance={appearance}
         detailMode={detailMode}
+        personalizedModel={personalizedModel}
         reducedMotion={reducedMotion}
         onDetailFallback={onDetailFallback}
         onHeartChange={onHeartChange}

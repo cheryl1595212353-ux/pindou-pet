@@ -6,6 +6,7 @@ import type { DetailMode } from "./detailMode";
 import { LOW_FPS_THRESHOLD } from "./frameRate";
 import { HIGH_DENSITY_VOXEL_COUNT } from "./highDensityGeometry";
 import { VoxelCatScene, type FrameSample } from "./VoxelCatScene";
+import type { PersonalizedVoxelModel } from "./visualHull";
 
 export function detectWebGLSupport(): boolean {
   try {
@@ -53,6 +54,7 @@ export interface VoxelCatStageProps {
   readonly appearance: CatAppearance;
   readonly cameraPreset: CameraPreset;
   readonly detailMode: DetailMode;
+  readonly personalizedModel?: PersonalizedVoxelModel;
   readonly webglSupported?: boolean;
 }
 
@@ -60,6 +62,7 @@ export function VoxelCatStage({
   appearance,
   cameraPreset,
   detailMode,
+  personalizedModel,
   webglSupported,
 }: VoxelCatStageProps) {
   const supported = useMemo(
@@ -110,7 +113,9 @@ export function VoxelCatStage({
     <div
       className="voxel-canvas-wrap"
       data-detail-mode={detailMode}
-      data-voxel-count={detailMode === "detailed" ? HIGH_DENSITY_VOXEL_COUNT : 0}
+      data-voxel-count={personalizedModel === undefined
+        ? detailMode === "detailed" ? HIGH_DENSITY_VOXEL_COUNT : 0
+        : personalizedModel.main.length + personalizedModel.tailSegment.length * 3}
       ref={stage}
     >
       <SceneErrorBoundary>
@@ -118,6 +123,7 @@ export function VoxelCatStage({
           appearance={appearance}
           cameraPreset={cameraPreset}
           detailMode={detailMode}
+          personalizedModel={personalizedModel}
           reducedMotion={reducedMotion}
           onDetailFallback={handleDetailFallback}
           onHeartChange={handleHeartChange}

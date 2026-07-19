@@ -10,7 +10,9 @@ import {
   HighDensityVoxelBody,
   type AnimatedVoxelRefs,
 } from "./HighDensityVoxelBody";
+import { PersonalizedVoxelBody } from "./PersonalizedVoxelBody";
 import { createPixelTexture } from "./texture";
+import type { PersonalizedVoxelModel } from "./visualHull";
 
 type Vec3 = [number, number, number];
 
@@ -188,6 +190,7 @@ function CoarseVoxelBody({ appearance, refs }: CoarseVoxelBodyProps) {
 export interface VoxelCatModelProps {
   readonly appearance: CatAppearance;
   readonly detailMode: DetailMode;
+  readonly personalizedModel?: PersonalizedVoxelModel;
   readonly reducedMotion: boolean;
   readonly onDetailFallback: () => void;
   readonly onHeartChange: (visible: boolean, progress: number) => void;
@@ -196,6 +199,7 @@ export interface VoxelCatModelProps {
 export function VoxelCatModel({
   appearance,
   detailMode,
+  personalizedModel,
   reducedMotion,
   onDetailFallback,
   onHeartChange,
@@ -281,7 +285,19 @@ export function VoxelCatModel({
       }}
     >
       <group ref={bodyPivot} userData={{ part: "body-pivot" }}>
-        {detailMode === "detailed" ? (
+        {personalizedModel !== undefined ? (
+          <DetailFallbackBoundary
+            fallback={<CoarseVoxelBody appearance={appearance} refs={animatedRefs} />}
+            onFallback={onDetailFallback}
+            resetKey={`${appearance.id}:${detailMode}:${personalizedModel.main.length}:${personalizedModel.voxelSize}`}
+          >
+            <PersonalizedVoxelBody
+              appearance={appearance}
+              model={personalizedModel}
+              {...animatedRefs}
+            />
+          </DetailFallbackBoundary>
+        ) : detailMode === "detailed" ? (
           <DetailFallbackBoundary
             fallback={<CoarseVoxelBody appearance={appearance} refs={animatedRefs} />}
             onFallback={onDetailFallback}
