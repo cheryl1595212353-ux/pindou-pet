@@ -30,9 +30,9 @@ export function countMask(mask: BinaryMask): number {
   return count;
 }
 
-function median(values: number[]): number {
+function quantile(values: number[], ratio: number): number {
   const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)] ?? 255;
+  return sorted[Math.floor(Math.max(0, sorted.length - 1) * ratio)] ?? 255;
 }
 
 function estimateBackground(raster: RgbaRaster): readonly [number, number, number] {
@@ -46,7 +46,11 @@ function estimateBackground(raster: RgbaRaster): readonly [number, number, numbe
       channels[2].push(raster.data[offset + 2] ?? 255);
     }
   }
-  return [median(channels[0]), median(channels[1]), median(channels[2])];
+  return [
+    quantile(channels[0], 0.9),
+    quantile(channels[1], 0.9),
+    quantile(channels[2], 0.9),
+  ];
 }
 
 function components(mask: BinaryMask): readonly number[][] {
@@ -84,6 +88,114 @@ function keepLargestComponent(mask: BinaryMask): BinaryMask {
   const largest = [...components(mask)].sort((a, b) => b.length - a.length)[0] ?? [];
   const data = new Uint8Array(mask.data.length);
   for (const cell of largest) data[cell] = 1;
+  return { width: mask.width, height: mask.height, data };
+}
+
+function removeHorizontalWisps(mask: BinaryMask): BinaryMask {
+  const data = mask.data.slice();
+  for (let y = 0; y < mask.height; y += 1) {
+    for (let x = 0; x < mask.width; x += 1) {
+      const cell = indexOf(mask, x, y);
+      if (mask.data[cell] === 0) continue;
+      let verticallySupported = false;
+      for (let dy = -1; dy <= 1 && !verticallySupported; dy += 2) {
+        const supportY = y + dy;
+        if (supportY < 0 || supportY >= mask.height) continue;
+        for (let dx = -1; dx <= 1; dx += 1) {
+          const supportX = x + dx;
+          if (supportX < 0 || supportX >= mask.width) continue;
+          if (mask.data[indexOf(mask, supportX, supportY)] !== 0) {
+            verticallySupported = true;
+            break;
+          }
+        }
+      }
+      if (!verticallySupported) data[cell] = 0;
+    }
+  }
+  return { width: mask.width, height: mask.height, data };
+}
+
+function trimUnsupportedBottomBand(mask: BinaryMask): BinaryMask {
+  let minX = mask.width;
+  let minY = mask.height;
+  let maxX = -1;
+  let maxY = -1;
+  const rowCounts = new Array<number>(mask.height).fill(0);
+  for (let y = 0; y < mask.height; y += 1) {
+    for (let x = 0; x < mask.width; x += 1) {
+      if (mask.data[indexOf(mask, x, y)] !== 0) {
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = y;
+        rowCounts[y] = (rowCounts[y] ?? 0) + 1;
+      }
+    }
+  }
+  if (maxX < minX || maxY < minY) return mask;
+
+  const subjectWidth = maxX - minX + 1;
+  const broadRowThreshold = Math.max(3, subjectWidth * 0.5);
+  let bandStart = maxY + 1;
+  for (let y = maxY; y >= minY; y -= 1) {
+    if ((rowCounts[y] ?? 0) < broadRowThreshold) break;
+    bandStart = y;
+  }
+  const supportY = bandStart - 1;
+  if (bandStart > maxY || supportY < minY) return mask;
+
+  const data = mask.data.slice();
+  for (let y = bandStart; y <= maxY; y += 1) {
+    for (let x = 0; x < mask.width; x += 1) {
+      const cell = indexOf(mask, x, y);
+      if (mask.data[cell] === 0) continue;
+      let supported = false;
+      for (let dx = -1; dx <= 1; dx += 1) {
+        const supportX = x + dx;
+        if (supportX < 0 || supportX >= mask.width) continue;
+        if (mask.data[indexOf(mask, supportX, supportY)] !== 0) {
+          supported = true;
+          break;
+        }
+      }
+      if (!supported) data[cell] = 0;
+    }
+  }
+  return { width: mask.width, height: mask.height, data };
+}
+
+function erodeVertically(mask: BinaryMask, radius: number): BinaryMask {
+  const data = new Uint8Array(mask.data.length);
+  for (let y = radius; y < mask.height - radius; y += 1) {
+    for (let x = 0; x < mask.width; x += 1) {
+      let filled = true;
+      for (let dy = -radius; dy <= radius; dy += 1) {
+        if (mask.data[indexOf(mask, x, y + dy)] === 0) {
+          filled = false;
+          break;
+        }
+      }
+      if (filled) data[indexOf(mask, x, y)] = 1;
+    }
+  }
+  return { width: mask.width, height: mask.height, data };
+}
+
+function dilateVertically(mask: BinaryMask, radius: number): BinaryMask {
+  const data = new Uint8Array(mask.data.length);
+  for (let y = 0; y < mask.height; y += 1) {
+    for (let x = 0; x < mask.width; x += 1) {
+      for (let dy = -radius; dy <= radius; dy += 1) {
+        const sourceY = y + dy;
+        if (sourceY < 0 || sourceY >= mask.height) continue;
+        if (mask.data[indexOf(mask, x, sourceY)] !== 0) {
+          data[indexOf(mask, x, y)] = 1;
+          break;
+        }
+      }
+    }
+  }
   return { width: mask.width, height: mask.height, data };
 }
 
@@ -187,8 +299,8 @@ export function extractForegroundMask(raster: RgbaRaster): BinaryMask {
     );
     const luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
     const chroma = Math.max(red, green, blue) - Math.min(red, green, blue);
-    if (distance >= 7 || luminance < 244 || chroma >= 8) weak[cell] = 1;
-    if (distance >= 24 || luminance < 218 || chroma >= 20) strong[cell] = 1;
+    if (distance >= 14 || luminance < 236 || chroma >= 10) weak[cell] = 1;
+    if (distance >= 30 || luminance < 215 || chroma >= 24) strong[cell] = 1;
   }
 
   const candidates = components({ width: raster.width, height: raster.height, data: weak })
@@ -197,7 +309,11 @@ export function extractForegroundMask(raster: RgbaRaster): BinaryMask {
   const subjectData = new Uint8Array(weak.length);
   for (const cell of subject) subjectData[cell] = 1;
 
-  const closed = erodeMask(dilateMask({ width: raster.width, height: raster.height, data: subjectData }), 1);
+  const subjectMask = { width: raster.width, height: raster.height, data: subjectData };
+  const bottomTrimmed = trimUnsupportedBottomBand(subjectMask);
+  const verticallyOpened = dilateVertically(erodeVertically(bottomTrimmed, 2), 2);
+  const pruned = removeHorizontalWisps(verticallyOpened);
+  const closed = erodeMask(dilateMask(pruned, 1), 1);
   return keepLargestComponent(fillHoles(closed));
 }
 
@@ -243,11 +359,19 @@ export function normalizeCatView(
   const cropHeight = maxY - minY + 1;
   const data = new Uint8Array(target.width * target.height);
   const rgba = new Uint8ClampedArray(target.width * target.height * 4);
+  rgba.fill(255);
+  const scale = Math.min(target.width / cropWidth, target.height / cropHeight);
+  const fittedWidth = Math.min(target.width, Math.max(1, Math.round(cropWidth * scale)));
+  const fittedHeight = Math.min(target.height, Math.max(1, Math.round(cropHeight * scale)));
+  const offsetX = Math.floor((target.width - fittedWidth) / 2);
+  const offsetY = target.height - fittedHeight;
 
-  for (let y = 0; y < target.height; y += 1) {
-    for (let x = 0; x < target.width; x += 1) {
-      const sampleX = Math.min(cropWidth - 1, Math.floor(((x + 0.5) / target.width) * cropWidth));
-      const sampleY = Math.min(cropHeight - 1, Math.floor(((y + 0.5) / target.height) * cropHeight));
+  for (let fittedY = 0; fittedY < fittedHeight; fittedY += 1) {
+    for (let fittedX = 0; fittedX < fittedWidth; fittedX += 1) {
+      const x = offsetX + fittedX;
+      const y = offsetY + fittedY;
+      const sampleX = Math.min(cropWidth - 1, Math.floor(((fittedX + 0.5) / fittedWidth) * cropWidth));
+      const sampleY = Math.min(cropHeight - 1, Math.floor(((fittedY + 0.5) / fittedHeight) * cropHeight));
       const sourceX = rotate180 ? maxX - sampleX : minX + sampleX;
       const sourceY = rotate180 ? maxY - sampleY : minY + sampleY;
       const sourceCell = indexOf(sourceMask, sourceX, sourceY);

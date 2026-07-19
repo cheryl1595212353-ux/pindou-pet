@@ -46,6 +46,82 @@ describe("three-view raster masks", () => {
     expect(countMask(mask)).toBe(18);
   });
 
+  it("does not mistake a bright studio-background gradient for a white subject", () => {
+    const raster = makeRaster(15, 15, [252, 249, 248]);
+    for (let index = 0; index < 15; index += 1) {
+      setPixel(raster, index, 0, [241, 238, 237]);
+      setPixel(raster, index, 14, [241, 238, 237]);
+      setPixel(raster, 0, index, [241, 238, 237]);
+      setPixel(raster, 14, index, [241, 238, 237]);
+    }
+    for (let y = 4; y <= 11; y += 1) {
+      for (let x = 5; x <= 9; x += 1) setPixel(raster, x, y, [235, 226, 216]);
+    }
+    for (let y = 4; y <= 6; y += 1) {
+      for (let x = 6; x <= 8; x += 1) setPixel(raster, x, y, [92, 66, 48]);
+    }
+
+    const mask = extractForegroundMask(raster);
+
+    expect(mask.data[indexOf(mask, 7, 8)]).toBe(1);
+    expect(mask.data[indexOf(mask, 2, 2)]).toBe(0);
+    expect(countMask(mask)).toBeLessThan(60);
+  });
+
+  it("removes a thin studio-floor shadow connected to the paws", () => {
+    const raster = makeRaster(11, 11, [252, 249, 248]);
+    for (let y = 2; y <= 8; y += 1) {
+      for (let x = 4; x <= 6; x += 1) setPixel(raster, x, y, [82, 61, 48]);
+    }
+    for (let x = 1; x <= 9; x += 1) {
+      setPixel(raster, x, 8, [232, 230, 228]);
+      setPixel(raster, x, 9, [232, 230, 228]);
+    }
+
+    const mask = extractForegroundMask(raster);
+
+    expect(mask.data[indexOf(mask, 5, 5)]).toBe(1);
+    expect(mask.data[indexOf(mask, 1, 8)]).toBe(0);
+    expect(mask.data[indexOf(mask, 9, 9)]).toBe(0);
+  });
+
+  it("trims a thicker bottom backdrop band without removing supported legs", () => {
+    const raster = makeRaster(15, 15, [252, 249, 248]);
+    for (let y = 2; y <= 12; y += 1) {
+      for (let x = 6; x <= 8; x += 1) setPixel(raster, x, y, [82, 61, 48]);
+    }
+    for (let y = 9; y <= 13; y += 1) {
+      for (let x = 1; x <= 13; x += 1) setPixel(raster, x, y, [232, 230, 228]);
+    }
+
+    const mask = extractForegroundMask(raster);
+
+    expect(mask.data[indexOf(mask, 7, 11)]).toBe(1);
+    expect(mask.data[indexOf(mask, 2, 11)]).toBe(0);
+    expect(mask.data[indexOf(mask, 12, 12)]).toBe(0);
+  });
+
+  it("opens the gap under a wide body instead of filling it above a floor band", () => {
+    const raster = makeRaster(21, 21, [252, 249, 248]);
+    for (let y = 2; y <= 10; y += 1) {
+      for (let x = 2; x <= 18; x += 1) setPixel(raster, x, y, [82, 61, 48]);
+    }
+    for (let y = 11; y <= 17; y += 1) {
+      for (let x = 4; x <= 6; x += 1) setPixel(raster, x, y, [82, 61, 48]);
+      for (let x = 14; x <= 16; x += 1) setPixel(raster, x, y, [82, 61, 48]);
+    }
+    for (let y = 13; y <= 19; y += 1) {
+      for (let x = 1; x <= 19; x += 1) setPixel(raster, x, y, [232, 230, 228]);
+    }
+
+    const mask = extractForegroundMask(raster);
+
+    expect(mask.data[indexOf(mask, 5, 18)]).toBe(1);
+    expect(mask.data[indexOf(mask, 15, 18)]).toBe(1);
+    expect(mask.data[indexOf(mask, 10, 18)]).toBe(0);
+    expect(mask.data[indexOf(mask, 10, 14)]).toBe(0);
+  });
+
   it("paints and erases a bounded circular mask stroke", () => {
     const empty = { width: 7, height: 7, data: new Uint8Array(49) };
     const added = paintMask(empty, { x: 3, y: 3, radius: 1, value: 1 });
@@ -67,14 +143,46 @@ describe("three-view raster masks", () => {
   });
 
   it("normalizes and rotates a top view into canonical direction", () => {
-    const raster = makeRaster(5, 7, [252, 250, 247]);
-    for (let y = 1; y <= 5; y += 1) setPixel(raster, 2, y, [65, 48, 35]);
-    setPixel(raster, 1, 1, [65, 48, 35]);
+    const raster = makeRaster(9, 11, [252, 250, 247]);
+    for (let y = 2; y <= 9; y += 1) {
+      for (let x = 3; x <= 5; x += 1) setPixel(raster, x, y, [65, 48, 35]);
+    }
+    for (let y = 2; y <= 7; y += 1) {
+      for (let x = 1; x <= 3; x += 1) setPixel(raster, x, y, [65, 48, 35]);
+    }
 
-    const normal = normalizeCatView(raster, { width: 5, height: 7 }, false);
-    const rotated = normalizeCatView(raster, { width: 5, height: 7 }, true);
+    const normal = normalizeCatView(raster, { width: 5, height: 8 }, false);
+    const rotated = normalizeCatView(raster, { width: 5, height: 8 }, true);
+    const centroid = (mask: typeof normal) => {
+      let totalX = 0;
+      let totalY = 0;
+      let count = 0;
+      for (let y = 0; y < mask.height; y += 1) {
+        for (let x = 0; x < mask.width; x += 1) {
+          if (mask.data[indexOf(mask, x, y)] === 0) continue;
+          totalX += x;
+          totalY += y;
+          count += 1;
+        }
+      }
+      return { x: totalX / count, y: totalY / count };
+    };
 
-    expect(normal.data[indexOf(normal, 1, 0)]).toBe(1);
-    expect(rotated.data[indexOf(rotated, 3, 6)]).toBe(1);
+    expect(centroid(normal).x + centroid(rotated).x).toBeCloseTo(4);
+    expect(centroid(normal).y + centroid(rotated).y).toBeCloseTo(7);
+    expect([...normal.data]).not.toEqual([...rotated.data]);
+  });
+
+  it("preserves silhouette aspect ratio instead of stretching it to every edge", () => {
+    const raster = makeRaster(10, 10, [252, 249, 248]);
+    for (let y = 1; y <= 8; y += 1) {
+      for (let x = 4; x <= 5; x += 1) setPixel(raster, x, y, [70, 55, 46]);
+    }
+
+    const normalized = normalizeCatView(raster, { width: 10, height: 10 });
+
+    expect(normalized.data[indexOf(normalized, 0, 5)]).toBe(0);
+    expect(normalized.data[indexOf(normalized, 4, 5)]).toBe(1);
+    expect(normalized.data[indexOf(normalized, 9, 5)]).toBe(0);
   });
 });

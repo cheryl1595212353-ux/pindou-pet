@@ -26,10 +26,15 @@ const views: Readonly<Record<CatViewName, NormalizedCatView>> = {
   top: view(6, 10),
 };
 
+let canvasContext: Pick<CanvasRenderingContext2D, "clearRect" | "fillRect">;
+
 beforeEach(() => {
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+  canvasContext = {
     clearRect: vi.fn(),
     fillRect: vi.fn(),
+  };
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+    ...canvasContext,
     fillStyle: "",
     imageSmoothingEnabled: false,
   } as unknown as CanvasRenderingContext2D);
@@ -60,6 +65,7 @@ describe("ShapeCorrectionPanel", () => {
     expect(screen.getByRole("button", { name: "俯视轮廓" })).toBeVisible();
     expect(screen.getByRole("button", { name: "补轮廓" })).toBeVisible();
     expect(screen.getByRole("button", { name: "擦轮廓" })).toBeVisible();
+    expect(canvasContext.fillRect).toHaveBeenCalled();
 
     const sliders = screen.getAllByRole("slider");
     expect(sliders).toHaveLength(5);

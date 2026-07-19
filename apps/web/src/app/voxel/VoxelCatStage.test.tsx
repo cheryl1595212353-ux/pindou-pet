@@ -74,6 +74,34 @@ describe("VoxelCatStage", () => {
       "data-voxel-count",
       "5",
     );
+    expect(view.container.querySelector(".voxel-canvas-wrap")).toHaveAttribute(
+      "data-model-source",
+      "three-view",
+    );
+    expect(view.container.querySelector(".voxel-canvas-wrap")).toHaveAttribute(
+      "data-model-cat",
+      "cat-01",
+    );
+    expect(view.container.querySelector(".voxel-canvas-wrap")).toHaveAttribute(
+      "data-model-length",
+      "2.000",
+    );
+    expect(view.container.querySelector(".voxel-canvas-wrap")).toHaveAttribute(
+      "data-model-height",
+      "2.000",
+    );
+    expect(view.container.querySelector(".voxel-canvas-wrap")).toHaveAttribute(
+      "data-model-width",
+      "1.000",
+    );
+    expect(view.container.querySelector(".voxel-canvas-wrap")).toHaveAttribute(
+      "data-tail-length",
+      "1.200",
+    );
+    expect(view.container.querySelector(".voxel-canvas-wrap")).toHaveAttribute(
+      "data-tail-color",
+      "#765432",
+    );
   });
 
   it("shows an accessible WebGL failure", () => {

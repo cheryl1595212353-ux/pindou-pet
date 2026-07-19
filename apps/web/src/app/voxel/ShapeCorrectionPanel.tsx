@@ -92,7 +92,7 @@ export function ShapeCorrectionPanel({
         if (draft.data[y * draft.width + x] !== 0) context.fillRect(x, y, 1, 1);
       }
     }
-  }, [draft]);
+  }, [draft, open]);
 
   const maskCellFromPointer = (
     event: ReactPointerEvent<HTMLCanvasElement>,

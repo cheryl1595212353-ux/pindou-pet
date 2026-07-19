@@ -113,6 +113,21 @@ export function VoxelCatStage({
     <div
       className="voxel-canvas-wrap"
       data-detail-mode={detailMode}
+      data-model-cat={appearance.id}
+      data-model-height={personalizedModel === undefined
+        ? undefined
+        : (personalizedModel.bounds.max[1] - personalizedModel.bounds.min[1]).toFixed(3)}
+      data-model-length={personalizedModel === undefined
+        ? undefined
+        : (personalizedModel.bounds.max[0] - personalizedModel.bounds.min[0]).toFixed(3)}
+      data-model-source={personalizedModel === undefined ? "fixed" : "three-view"}
+      data-model-width={personalizedModel === undefined
+        ? undefined
+        : (personalizedModel.bounds.max[2] - personalizedModel.bounds.min[2]).toFixed(3)}
+      data-tail-length={personalizedModel === undefined
+        ? undefined
+        : (personalizedModel.anchors.tailNextPivotX * 3).toFixed(3)}
+      data-tail-color={personalizedModel?.tailSegment[0]?.color}
       data-voxel-count={personalizedModel === undefined
         ? detailMode === "detailed" ? HIGH_DENSITY_VOXEL_COUNT : 0
         : personalizedModel.main.length + personalizedModel.tailSegment.length * 3}

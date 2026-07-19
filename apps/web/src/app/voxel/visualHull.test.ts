@@ -122,4 +122,39 @@ describe("three-view visual hull", () => {
     expect(high(corrected)).toBeGreaterThan(high(original));
     expect(low(corrected)).toBe(low(original));
   });
+
+  it("applies the remaining bounded body and tail corrections to their target axes", () => {
+    const resolution = { length: 20, height: 16, width: 20 };
+    const original = build(resolution);
+    const longer = build(resolution, undefined, {
+      ...DEFAULT_SHAPE_CORRECTIONS,
+      bodyLength: 1.2,
+    });
+    const longerLegs = build(resolution, undefined, {
+      ...DEFAULT_SHAPE_CORRECTIONS,
+      legLength: 1.2,
+    });
+    const tallerEars = build(resolution, undefined, {
+      ...DEFAULT_SHAPE_CORRECTIONS,
+      earHeight: 1.2,
+    });
+    const thickerTail = build(resolution, undefined, {
+      ...DEFAULT_SHAPE_CORRECTIONS,
+      tailThickness: 1.2,
+    });
+    const extent = (model: PersonalizedVoxelModel, axis: 0 | 1 | 2) =>
+      model.bounds.max[axis] - model.bounds.min[axis];
+    const headPeak = (model: PersonalizedVoxelModel) => Math.max(...model.main
+      .filter((cell) => cell.grid[0] < 7 && cell.grid[1] > 13)
+      .map((cell) => cell.position[1]));
+    const tailWidth = (model: PersonalizedVoxelModel) => {
+      const values = model.tailSegment.map((cell) => cell.position[2]);
+      return Math.max(...values) - Math.min(...values);
+    };
+
+    expect(extent(longer, 0)).toBeGreaterThan(extent(original, 0));
+    expect(extent(longerLegs, 1)).toBeGreaterThan(extent(original, 1));
+    expect(headPeak(tallerEars)).toBeGreaterThan(headPeak(original));
+    expect(tailWidth(thickerTail)).toBeGreaterThan(tailWidth(original));
+  });
 });

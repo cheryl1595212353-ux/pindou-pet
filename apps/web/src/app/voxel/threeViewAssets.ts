@@ -108,22 +108,39 @@ function averageTailColor(
   end: number,
   fallback: Rgb,
 ): string {
-  let red = 0;
-  let green = 0;
-  let blue = 0;
-  let samples = 0;
+  const pixels: Rgb[] = [];
   for (let y = Math.max(0, start); y <= Math.min(mask.height - 1, end); y += 1) {
     for (let x = 0; x < mask.width; x += 1) {
       const cell = indexOf(mask, x, y);
       if (mask.data[cell] === 0) continue;
       const offset = cell * 4;
-      red += raster.data[offset] ?? fallback[0];
-      green += raster.data[offset + 1] ?? fallback[1];
-      blue += raster.data[offset + 2] ?? fallback[2];
-      samples += 1;
+      pixels.push([
+        raster.data[offset] ?? fallback[0],
+        raster.data[offset + 1] ?? fallback[1],
+        raster.data[offset + 2] ?? fallback[2],
+      ]);
     }
   }
-  const color = samples === 0 ? fallback : [red / samples, green / samples, blue / samples] as const;
+  return representativeTailColor(pixels, fallback);
+}
+
+export function representativeTailColor(
+  pixels: readonly Rgb[],
+  fallback: Rgb,
+): string {
+  const ranked = [...pixels].sort((left, right) => {
+    const score = ([red, green, blue]: Rgb) =>
+      red * 0.2126 + green * 0.7152 + blue * 0.0722 -
+      (Math.max(red, green, blue) - Math.min(red, green, blue)) * 0.7;
+    return score(left) - score(right);
+  });
+  const selected = ranked.length === 0
+    ? [fallback]
+    : ranked.slice(0, Math.max(1, Math.ceil(ranked.length * 0.4)));
+  const color = selected.reduce(
+    (sum, pixel) => [sum[0] + pixel[0], sum[1] + pixel[1], sum[2] + pixel[2]] as Rgb,
+    [0, 0, 0] as Rgb,
+  ).map((value) => value / selected.length);
   return `#${color.map((value) => Math.round(value).toString(16).padStart(2, "0")).join("")}`;
 }
 
@@ -202,4 +219,3 @@ export function createCachedCatViewLoader(loadRaster: RasterLoader = loadImageRg
 }
 
 export const loadNormalizedCatViews = createCachedCatViewLoader();
-
