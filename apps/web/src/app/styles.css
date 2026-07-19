@@ -44,6 +44,10 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 .angle-switcher button { min-height: 35px; border: 1px solid #251f1a; border-right: 0; background: transparent; cursor: pointer; font-size: 11px; }
 .angle-switcher button:last-child { border-right: 1px solid #251f1a; }
 .angle-switcher button[aria-pressed="true"] { color: #fff9ef; background: #251f1a; }
+.detail-switcher { display: grid; margin: 0 0 14px; grid-template-columns: repeat(2, 1fr); }
+.detail-switcher button { min-height: 35px; border: 1px solid #251f1a; border-right: 0; background: #f8f1e6; cursor: pointer; font-size: 11px; }
+.detail-switcher button:last-child { border-right: 1px solid #251f1a; }
+.detail-switcher button[aria-pressed="true"] { color: #fff9ef; background: #c84831; }
 .interaction-guide { display: grid; margin-top: 22px; padding-top: 18px; grid-template-columns: auto 1fr; gap: 9px 16px; border-top: 1px solid rgb(37 31 26 / 22%); font-size: 12px; }
 .interaction-guide span { color: #8a7d70; }
 .interaction-guide strong { font-weight: 800; }

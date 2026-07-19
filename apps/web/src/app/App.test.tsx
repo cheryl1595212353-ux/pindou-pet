@@ -5,12 +5,14 @@ vi.mock("./voxel/VoxelCatStage", () => ({
   VoxelCatStage: ({
     appearance,
     cameraPreset,
+    detailMode,
   }: {
     appearance: { id: string; name: string };
     cameraPreset: string;
+    detailMode: string;
   }) => (
     <div aria-label="互动式 3D 方块猫" role="img">
-      {appearance.name} / {cameraPreset}
+      {appearance.name} / {cameraPreset} / {detailMode}
     </div>
   ),
 }));
@@ -49,6 +51,30 @@ describe("product shell", () => {
 
     expect(screen.getByRole("img", { name: "互动式 3D 方块猫" })).toHaveTextContent("橘子 / side");
     expect(screen.getByRole("button", { name: "侧面视角" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("switches detail modes without losing the selected cat or camera", () => {
+    render(<App initialPath="/" />);
+    expect(screen.getByRole("img", { name: "互动式 3D 方块猫" })).toHaveTextContent(
+      "小满 / front / detailed",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "测试猫：橘子，橘色长毛" }));
+    fireEvent.click(screen.getByRole("button", { name: "侧面视角" }));
+    fireEvent.click(screen.getByRole("button", { name: "性能模式" }));
+
+    expect(screen.getByRole("img", { name: "互动式 3D 方块猫" })).toHaveTextContent(
+      "橘子 / side / performance",
+    );
+    expect(screen.getByRole("button", { name: "性能模式" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "精细模式" }));
+    expect(screen.getByRole("img", { name: "互动式 3D 方块猫" })).toHaveTextContent(
+      "橘子 / side / detailed",
+    );
   });
 
   it("provides the four approved route boundaries", () => {

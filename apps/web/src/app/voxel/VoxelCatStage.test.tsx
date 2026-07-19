@@ -10,6 +10,7 @@ describe("VoxelCatStage", () => {
       <VoxelCatStage
         appearance={getCatAppearance("cat-01").appearance}
         cameraPreset="front"
+        detailMode="detailed"
         webglSupported={false}
       />,
     );

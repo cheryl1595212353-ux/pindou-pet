@@ -7,6 +7,7 @@ import {
   type CatId,
 } from "./voxel/appearances";
 import type { CameraPreset } from "./voxel/camera";
+import { DEFAULT_DETAIL_MODE, type DetailMode } from "./voxel/detailMode";
 import { VoxelCatStage } from "./voxel/VoxelCatStage";
 
 const VIEW_PRESETS: ReadonlyArray<{ id: CameraPreset; label: string }> = [
@@ -18,6 +19,7 @@ const VIEW_PRESETS: ReadonlyArray<{ id: CameraPreset; label: string }> = [
 export function PixelPetStudio() {
   const [selectedCatId, setSelectedCatId] = useState<CatId>(DEFAULT_CAT_ID);
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>("front");
+  const [detailMode, setDetailMode] = useState<DetailMode>(DEFAULT_DETAIL_MODE);
   const { appearance, didFallback } = useMemo(
     () => getCatAppearance(selectedCatId),
     [selectedCatId],
@@ -69,6 +71,23 @@ export function PixelPetStudio() {
           ))}
         </div>
 
+        <div className="detail-switcher" aria-label="模型精细度">
+          <button
+            aria-pressed={detailMode === "detailed"}
+            onClick={() => setDetailMode("detailed")}
+            type="button"
+          >
+            精细模式
+          </button>
+          <button
+            aria-pressed={detailMode === "performance"}
+            onClick={() => setDetailMode("performance")}
+            type="button"
+          >
+            性能模式
+          </button>
+        </div>
+
         {didFallback && (
           <p className="appearance-warning" role="status">
             外观配置无效，已使用默认三花。
@@ -87,7 +106,11 @@ export function PixelPetStudio() {
           <span>VOXEL ROOM / 3D</span>
           <span className="status ready">可以互动</span>
         </div>
-        <VoxelCatStage appearance={appearance} cameraPreset={cameraPreset} />
+        <VoxelCatStage
+          appearance={appearance}
+          cameraPreset={cameraPreset}
+          detailMode={detailMode}
+        />
         <p className="interaction-hint">拖动看全身，点击和它打招呼</p>
       </div>
     </section>

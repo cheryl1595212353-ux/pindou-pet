@@ -2,6 +2,7 @@ import { Component, useCallback, useEffect, useMemo, useRef, useState, type Reac
 
 import type { CatAppearance } from "./appearances";
 import type { CameraPreset } from "./camera";
+import type { DetailMode } from "./detailMode";
 import { VoxelCatScene, type FrameSample } from "./VoxelCatScene";
 
 export function detectWebGLSupport(): boolean {
@@ -49,12 +50,14 @@ function prefersReducedMotion(): boolean {
 export interface VoxelCatStageProps {
   readonly appearance: CatAppearance;
   readonly cameraPreset: CameraPreset;
+  readonly detailMode: DetailMode;
   readonly webglSupported?: boolean;
 }
 
 export function VoxelCatStage({
   appearance,
   cameraPreset,
+  detailMode,
   webglSupported,
 }: VoxelCatStageProps) {
   const supported = useMemo(
@@ -83,6 +86,7 @@ export function VoxelCatStage({
     stage.current.dataset.frameCount = String(sample.frames);
     stage.current.dataset.sampleSeconds = sample.elapsedSeconds.toFixed(1);
   }, []);
+  const handleDetailFallback = useCallback(() => undefined, []);
 
   if (!supported) return <SceneFailure />;
 
@@ -92,7 +96,9 @@ export function VoxelCatStage({
         <VoxelCatScene
           appearance={appearance}
           cameraPreset={cameraPreset}
+          detailMode={detailMode}
           reducedMotion={reducedMotion}
+          onDetailFallback={handleDetailFallback}
           onHeartChange={handleHeartChange}
           onFrameSample={handleFrameSample}
         />

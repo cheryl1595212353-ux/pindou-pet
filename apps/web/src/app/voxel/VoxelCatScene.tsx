@@ -5,6 +5,7 @@ import { Vector3 } from "three";
 
 import type { CatAppearance } from "./appearances";
 import { CAMERA_PRESETS, type CameraPreset } from "./camera";
+import type { DetailMode } from "./detailMode";
 import { VoxelCatModel } from "./VoxelCatModel";
 
 const IS_DEVELOPMENT = (
@@ -121,7 +122,9 @@ function CameraController({
 export interface VoxelCatSceneProps {
   readonly appearance: CatAppearance;
   readonly cameraPreset: CameraPreset;
+  readonly detailMode: DetailMode;
   readonly reducedMotion: boolean;
+  readonly onDetailFallback: () => void;
   readonly onHeartChange: (visible: boolean, progress: number) => void;
   readonly onFrameSample?: (sample: FrameSample) => void;
 }
@@ -129,7 +132,9 @@ export interface VoxelCatSceneProps {
 export function VoxelCatScene({
   appearance,
   cameraPreset,
+  detailMode,
   reducedMotion,
+  onDetailFallback,
   onHeartChange,
   onFrameSample,
 }: VoxelCatSceneProps) {
@@ -161,9 +166,9 @@ export function VoxelCatScene({
 
       <VoxelCatModel
         appearance={appearance}
-        detailMode="detailed"
+        detailMode={detailMode}
         reducedMotion={reducedMotion}
-        onDetailFallback={() => undefined}
+        onDetailFallback={onDetailFallback}
         onHeartChange={onHeartChange}
       />
 
