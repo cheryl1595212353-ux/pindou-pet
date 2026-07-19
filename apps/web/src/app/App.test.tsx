@@ -77,6 +77,33 @@ describe("product shell", () => {
     );
   });
 
+  it("keeps the correction panel collapsed until requested", () => {
+    render(<App initialPath="/" />);
+
+    expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("轮廓校正"));
+
+    expect(screen.getByRole("slider", { name: "头宽" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "恢复自动轮廓" })).toBeVisible();
+  });
+
+  it("keeps correction values separately for each test cat", () => {
+    render(<App initialPath="/" />);
+    fireEvent.click(screen.getByText("轮廓校正"));
+    const headWidth = () => screen.getByRole("slider", { name: "头宽" });
+
+    fireEvent.change(headWidth(), { target: { value: "1.2" } });
+    fireEvent.click(screen.getByRole("button", { name: "测试猫：橘子，橘色长毛" }));
+    expect(headWidth()).toHaveValue("1");
+
+    fireEvent.change(headWidth(), { target: { value: "0.8" } });
+    fireEvent.click(screen.getByRole("button", { name: "测试猫：小满，三花短毛" }));
+    expect(headWidth()).toHaveValue("1.2");
+
+    fireEvent.click(screen.getByRole("button", { name: "恢复自动轮廓" }));
+    expect(headWidth()).toHaveValue("1");
+  });
+
   it("provides the four approved route boundaries", () => {
     setViewport(1440, 900);
     const routes = [

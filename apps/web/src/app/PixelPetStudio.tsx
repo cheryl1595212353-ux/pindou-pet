@@ -8,6 +8,14 @@ import {
 } from "./voxel/appearances";
 import type { CameraPreset } from "./voxel/camera";
 import { DEFAULT_DETAIL_MODE, type DetailMode } from "./voxel/detailMode";
+import { ShapeCorrectionPanel } from "./voxel/ShapeCorrectionPanel";
+import {
+  DEFAULT_SHAPE_CORRECTIONS,
+  type BinaryMask,
+  type CatViewName,
+  type ShapeCorrections,
+} from "./voxel/threeViewTypes";
+import { useThreeViewCatModel } from "./voxel/useThreeViewCatModel";
 import { VoxelCatStage } from "./voxel/VoxelCatStage";
 
 const VIEW_PRESETS: ReadonlyArray<{ id: CameraPreset; label: string }> = [
@@ -16,14 +24,46 @@ const VIEW_PRESETS: ReadonlyArray<{ id: CameraPreset; label: string }> = [
   { id: "top", label: "俯视" },
 ];
 
+const EMPTY_MASK_OVERRIDES: Partial<Record<CatViewName, BinaryMask>> = {};
+
 export function PixelPetStudio() {
   const [selectedCatId, setSelectedCatId] = useState<CatId>(DEFAULT_CAT_ID);
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>("front");
   const [detailMode, setDetailMode] = useState<DetailMode>(DEFAULT_DETAIL_MODE);
+  const [correctionsByCat, setCorrectionsByCat] = useState<
+    Partial<Record<CatId, ShapeCorrections>>
+  >({});
+  const [maskOverridesByCat, setMaskOverridesByCat] = useState<
+    Partial<Record<CatId, Partial<Record<CatViewName, BinaryMask>>>>
+  >({});
   const { appearance, didFallback } = useMemo(
     () => getCatAppearance(selectedCatId),
     [selectedCatId],
   );
+  const corrections = correctionsByCat[selectedCatId] ?? DEFAULT_SHAPE_CORRECTIONS;
+  const maskOverrides = maskOverridesByCat[selectedCatId] ?? EMPTY_MASK_OVERRIDES;
+  const modelState = useThreeViewCatModel({
+    catId: selectedCatId,
+    appearance,
+    corrections,
+    maskOverrides,
+  });
+  const personalizedModel = detailMode === "detailed"
+    ? modelState.detailed ?? undefined
+    : modelState.performance ?? undefined;
+
+  const resetActiveCorrections = () => {
+    setCorrectionsByCat((current) => {
+      const next = { ...current };
+      delete next[selectedCatId];
+      return next;
+    });
+    setMaskOverridesByCat((current) => {
+      const next = { ...current };
+      delete next[selectedCatId];
+      return next;
+    });
+  };
 
   return (
     <section className="studio" aria-label="3D 像素宠物工作台">
@@ -88,6 +128,37 @@ export function PixelPetStudio() {
           </button>
         </div>
 
+        {modelState.status === "loading" && (
+          <p className="model-status" role="status">
+            正在从三视图生成轮廓…
+          </p>
+        )}
+        {modelState.status === "error" && (
+          <p className="model-status warning" role="status" title={modelState.message ?? undefined}>
+            {personalizedModel === undefined
+              ? "个性轮廓生成失败，已使用安全模型。"
+              : "本次轮廓校正未生效，已保留上一个有效模型。"}
+          </p>
+        )}
+
+        <ShapeCorrectionPanel
+          corrections={corrections}
+          maskOverrides={maskOverrides}
+          onCorrectionsChange={(next) => setCorrectionsByCat((current) => ({
+            ...current,
+            [selectedCatId]: next,
+          }))}
+          onMaskChange={(view, mask) => setMaskOverridesByCat((current) => ({
+            ...current,
+            [selectedCatId]: {
+              ...(current[selectedCatId] ?? EMPTY_MASK_OVERRIDES),
+              [view]: mask,
+            },
+          }))}
+          onReset={resetActiveCorrections}
+          views={modelState.views}
+        />
+
         {didFallback && (
           <p className="appearance-warning" role="status">
             外观配置无效，已使用默认三花。
@@ -110,6 +181,7 @@ export function PixelPetStudio() {
           appearance={appearance}
           cameraPreset={cameraPreset}
           detailMode={detailMode}
+          personalizedModel={personalizedModel}
         />
         <p className="interaction-hint">拖动看全身，点击和它打招呼</p>
       </div>
