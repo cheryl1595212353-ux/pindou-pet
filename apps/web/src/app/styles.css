@@ -70,6 +70,7 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 .voxel-hearts span:nth-child(2) { animation-delay: .06s; }
 .voxel-hearts span:nth-child(3) { animation-delay: .12s; }
 .voxel-hearts.reduced span { opacity: 1; animation: none; transform: scale(1); }
+.voxel-performance-warning { position: absolute; right: 14px; bottom: 14px; z-index: 4; max-width: 260px; margin: 0; padding: 9px 11px; color: #6e431c; background: rgb(255 239 203 / 94%); border: 1px solid rgb(110 67 28 / 45%); font-size: 11px; box-shadow: 3px 3px 0 rgb(37 31 26 / 14%); }
 
 .placeholder-card, .viewport-notice { width: min(760px, calc(100% - 40px)); margin: 8vh auto; padding: 56px; border: 1px solid #251f1a; background: #fffaf1; box-shadow: 10px 10px 0 #251f1a; }
 .description, .viewport-notice p { color: #62584d; font-size: 18px; line-height: 1.7; }

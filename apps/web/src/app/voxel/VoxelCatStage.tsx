@@ -3,6 +3,8 @@ import { Component, useCallback, useEffect, useMemo, useRef, useState, type Reac
 import type { CatAppearance } from "./appearances";
 import type { CameraPreset } from "./camera";
 import type { DetailMode } from "./detailMode";
+import { LOW_FPS_THRESHOLD } from "./frameRate";
+import { HIGH_DENSITY_VOXEL_COUNT } from "./highDensityGeometry";
 import { VoxelCatScene, type FrameSample } from "./VoxelCatScene";
 
 export function detectWebGLSupport(): boolean {
@@ -66,6 +68,8 @@ export function VoxelCatStage({
   );
   const [reducedMotion, setReducedMotion] = useState(prefersReducedMotion);
   const [heartVisible, setHeartVisible] = useState(false);
+  const [lowFps, setLowFps] = useState(false);
+  const [detailFallback, setDetailFallback] = useState(false);
   const stage = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,18 +84,35 @@ export function VoxelCatStage({
     setHeartVisible((current) => (current === visible ? current : visible));
   }, []);
 
+  useEffect(() => {
+    setLowFps(false);
+    setDetailFallback(false);
+  }, [appearance.id, detailMode]);
+
   const handleFrameSample = useCallback((sample: FrameSample) => {
+    setLowFps(detailMode === "detailed" && sample.averageFps < LOW_FPS_THRESHOLD);
     if (stage.current === null) return;
     stage.current.dataset.averageFps = sample.averageFps.toFixed(1);
     stage.current.dataset.frameCount = String(sample.frames);
     stage.current.dataset.sampleSeconds = sample.elapsedSeconds.toFixed(1);
-  }, []);
-  const handleDetailFallback = useCallback(() => undefined, []);
+  }, [detailMode]);
+  const handleDetailFallback = useCallback(() => setDetailFallback(true), []);
 
   if (!supported) return <SceneFailure />;
 
+  const warning = detailFallback
+    ? "精细模型加载失败，已显示性能模型"
+    : lowFps
+      ? "帧率较低，建议切换性能模式"
+      : null;
+
   return (
-    <div className="voxel-canvas-wrap" ref={stage}>
+    <div
+      className="voxel-canvas-wrap"
+      data-detail-mode={detailMode}
+      data-voxel-count={detailMode === "detailed" ? HIGH_DENSITY_VOXEL_COUNT : 0}
+      ref={stage}
+    >
       <SceneErrorBoundary>
         <VoxelCatScene
           appearance={appearance}
@@ -103,6 +124,11 @@ export function VoxelCatStage({
           onFrameSample={handleFrameSample}
         />
       </SceneErrorBoundary>
+      {warning !== null && (
+        <p className="voxel-performance-warning" role="status">
+          {warning}
+        </p>
+      )}
       {heartVisible && (
         <div
           className={`voxel-hearts${reducedMotion ? " reduced" : ""}`}

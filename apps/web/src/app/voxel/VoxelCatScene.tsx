@@ -6,11 +6,12 @@ import { Vector3 } from "three";
 import type { CatAppearance } from "./appearances";
 import { CAMERA_PRESETS, type CameraPreset } from "./camera";
 import type { DetailMode } from "./detailMode";
+import {
+  FPS_WINDOW_MS,
+  advanceFrameRate,
+  createFrameRateAccumulator,
+} from "./frameRate";
 import { VoxelCatModel } from "./VoxelCatModel";
-
-const IS_DEVELOPMENT = (
-  import.meta as ImportMeta & { readonly env: { readonly DEV: boolean } }
-).env.DEV;
 
 export interface FrameSample {
   readonly averageFps: number;
@@ -19,20 +20,17 @@ export interface FrameSample {
 }
 
 function FrameRateProbe({ onSample }: { readonly onSample: (sample: FrameSample) => void }) {
-  const elapsedSeconds = useRef(0);
-  const frames = useRef(0);
-  const lastReportedSecond = useRef(0);
+  const accumulator = useRef(createFrameRateAccumulator());
 
   useFrame((_state, delta) => {
-    elapsedSeconds.current += delta;
-    frames.current += 1;
-    if (elapsedSeconds.current - lastReportedSecond.current < 1) return;
+    const next = advanceFrameRate(accumulator.current, delta * 1_000);
+    accumulator.current = next.state;
+    if (next.averageFps === null) return;
 
-    lastReportedSecond.current = elapsedSeconds.current;
     onSample({
-      averageFps: frames.current / elapsedSeconds.current,
-      elapsedSeconds: elapsedSeconds.current,
-      frames: frames.current,
+      averageFps: next.averageFps,
+      elapsedSeconds: next.state.totalElapsedMs / 1_000,
+      frames: Math.round(next.averageFps * (FPS_WINDOW_MS / 1_000)),
     });
   });
 
@@ -178,7 +176,7 @@ export function VoxelCatScene({
       </mesh>
 
       <CameraController preset={cameraPreset} reducedMotion={reducedMotion} />
-      {IS_DEVELOPMENT && onFrameSample !== undefined && (
+      {detailMode === "detailed" && onFrameSample !== undefined && (
         <FrameRateProbe onSample={onFrameSample} />
       )}
     </Canvas>
