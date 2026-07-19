@@ -161,7 +161,9 @@ export function VoxelCatScene({
 
       <VoxelCatModel
         appearance={appearance}
+        detailMode="detailed"
         reducedMotion={reducedMotion}
+        onDetailFallback={() => undefined}
         onHeartChange={onHeartChange}
       />
 

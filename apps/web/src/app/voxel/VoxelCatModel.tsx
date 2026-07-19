@@ -4,6 +4,12 @@ import type { Group, Mesh, Texture } from "three";
 
 import type { CatAppearance } from "./appearances";
 import { idleState, sampleCatMotion, startJump, type AnimationState } from "./animation";
+import { DetailFallbackBoundary } from "./DetailFallbackBoundary";
+import type { DetailMode } from "./detailMode";
+import {
+  HighDensityVoxelBody,
+  type AnimatedVoxelRefs,
+} from "./HighDensityVoxelBody";
 import { createPixelTexture } from "./texture";
 
 type Vec3 = [number, number, number];
@@ -41,31 +47,12 @@ function Block({ part, position, size, texture, color = "#ffffff", rotation }: B
   );
 }
 
-export interface VoxelCatModelProps {
+interface CoarseVoxelBodyProps {
   readonly appearance: CatAppearance;
-  readonly reducedMotion: boolean;
-  readonly onHeartChange: (visible: boolean, progress: number) => void;
+  readonly refs: AnimatedVoxelRefs;
 }
 
-export function VoxelCatModel({
-  appearance,
-  reducedMotion,
-  onHeartChange,
-}: VoxelCatModelProps) {
-  const root = useRef<Group>(null);
-  const bodyPivot = useRef<Group>(null);
-  const leftEye = useRef<Mesh>(null);
-  const rightEye = useRef<Mesh>(null);
-  const leftBlink = useRef<Mesh>(null);
-  const rightBlink = useRef<Mesh>(null);
-  const tailOne = useRef<Group>(null);
-  const tailTwo = useRef<Group>(null);
-  const tailThree = useRef<Group>(null);
-  const pointerStart = useRef<{ x: number; y: number } | null>(null);
-  const animationState = useRef<AnimationState>(idleState());
-  const lastHeartVisible = useRef(false);
-  const sceneNowMs = useRef(0);
-
+function CoarseVoxelBody({ appearance, refs }: CoarseVoxelBodyProps) {
   const textures = useMemo(
     () => ({
       body: createPixelTexture(appearance.patterns.body, appearance.palette),
@@ -82,6 +69,160 @@ export function VoxelCatModel({
     },
     [textures],
   );
+
+  return (
+    <>
+      <Block {...PARTS.body} part="body" texture={textures.body} />
+      <Block {...PARTS.head} part="head" texture={textures.face} />
+      <Block {...PARTS.muzzle} part="muzzle" color={appearance.palette.light} />
+      <Block
+        part="left-ear"
+        position={[-2.55, 4.48, -0.62]}
+        size={PARTS.ears.size}
+        texture={textures.face}
+        rotation={[0, 0, -0.08]}
+      />
+      <Block
+        part="right-ear"
+        position={[-2.55, 4.48, 0.62]}
+        size={PARTS.ears.size}
+        texture={textures.face}
+        rotation={[0, 0, 0.08]}
+      />
+
+      {([-1.25, 1.25] as const).flatMap((x, xIndex) =>
+        ([-0.62, 0.62] as const).map((z, zIndex) => (
+          <Block
+            key={`${x}-${z}`}
+            part={`${xIndex === 0 ? "front" : "rear"}-${zIndex === 0 ? "left" : "right"}-leg`}
+            position={[x, 1.05, z]}
+            size={PARTS.legs.size}
+            texture={textures.legs}
+          />
+        )),
+      )}
+
+      <mesh
+        ref={refs.leftEye}
+        castShadow
+        position={[-3.62, 3.43, -0.47]}
+        userData={{ part: "left-eye" }}
+      >
+        <boxGeometry args={[0.1, 0.34, 0.34]} />
+        <meshStandardMaterial color={appearance.palette.eye} roughness={0.7} />
+      </mesh>
+      <mesh
+        ref={refs.rightEye}
+        castShadow
+        position={[-3.62, 3.43, 0.47]}
+        userData={{ part: "right-eye" }}
+      >
+        <boxGeometry args={[0.1, 0.34, 0.34]} />
+        <meshStandardMaterial color={appearance.palette.eye} roughness={0.7} />
+      </mesh>
+      <mesh
+        ref={refs.leftBlink}
+        visible={false}
+        position={[-3.68, 3.43, -0.47]}
+        userData={{ part: "left-blink" }}
+      >
+        <boxGeometry args={[0.1, 0.06, 0.38]} />
+        <meshStandardMaterial color={appearance.palette.dark} />
+      </mesh>
+      <mesh
+        ref={refs.rightBlink}
+        visible={false}
+        position={[-3.68, 3.43, 0.47]}
+        userData={{ part: "right-blink" }}
+      >
+        <boxGeometry args={[0.1, 0.06, 0.38]} />
+        <meshStandardMaterial color={appearance.palette.dark} />
+      </mesh>
+      <Block
+        part="nose"
+        position={[-4, 2.98, 0]}
+        size={[0.1, 0.23, 0.3]}
+        color={appearance.palette.nose}
+      />
+
+      <group
+        ref={refs.tailOne}
+        position={[1.9, 2.65, 0]}
+        userData={{ part: "tail-1-pivot" }}
+      >
+        <Block
+          part="tail-1"
+          position={[0.72, 0, 0]}
+          size={PARTS.tail.size}
+          texture={textures.tail}
+        />
+        <group
+          ref={refs.tailTwo}
+          position={[1.43, 0, 0]}
+          userData={{ part: "tail-2-pivot" }}
+        >
+          <Block
+            part="tail-2"
+            position={[0.72, 0, 0]}
+            size={PARTS.tail.size}
+            texture={textures.tail}
+          />
+          <group
+            ref={refs.tailThree}
+            position={[1.43, 0, 0]}
+            userData={{ part: "tail-3-pivot" }}
+          >
+            <Block
+              part="tail-3"
+              position={[0.72, 0, 0]}
+              size={PARTS.tail.size}
+              texture={textures.tail}
+            />
+          </group>
+        </group>
+      </group>
+    </>
+  );
+}
+
+export interface VoxelCatModelProps {
+  readonly appearance: CatAppearance;
+  readonly detailMode: DetailMode;
+  readonly reducedMotion: boolean;
+  readonly onDetailFallback: () => void;
+  readonly onHeartChange: (visible: boolean, progress: number) => void;
+}
+
+export function VoxelCatModel({
+  appearance,
+  detailMode,
+  reducedMotion,
+  onDetailFallback,
+  onHeartChange,
+}: VoxelCatModelProps) {
+  const root = useRef<Group>(null);
+  const bodyPivot = useRef<Group>(null);
+  const leftEye = useRef<Mesh>(null);
+  const rightEye = useRef<Mesh>(null);
+  const leftBlink = useRef<Mesh>(null);
+  const rightBlink = useRef<Mesh>(null);
+  const tailOne = useRef<Group>(null);
+  const tailTwo = useRef<Group>(null);
+  const tailThree = useRef<Group>(null);
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const animationState = useRef<AnimationState>(idleState());
+  const lastHeartVisible = useRef(false);
+  const sceneNowMs = useRef(0);
+
+  const animatedRefs: AnimatedVoxelRefs = {
+    leftEye,
+    rightEye,
+    leftBlink,
+    rightBlink,
+    tailOne,
+    tailTwo,
+    tailThree,
+  };
 
   useFrame(({ clock }) => {
     const nowMs = clock.elapsedTime * 1_000;
@@ -140,63 +281,17 @@ export function VoxelCatModel({
       }}
     >
       <group ref={bodyPivot} userData={{ part: "body-pivot" }}>
-        <Block {...PARTS.body} part="body" texture={textures.body} />
-        <Block {...PARTS.head} part="head" texture={textures.face} />
-        <Block {...PARTS.muzzle} part="muzzle" color={appearance.palette.light} />
-        <Block
-          part="left-ear"
-          position={[-2.55, 4.48, -0.62]}
-          size={PARTS.ears.size}
-          texture={textures.face}
-          rotation={[0, 0, -0.08]}
-        />
-        <Block
-          part="right-ear"
-          position={[-2.55, 4.48, 0.62]}
-          size={PARTS.ears.size}
-          texture={textures.face}
-          rotation={[0, 0, 0.08]}
-        />
-
-        {([-1.25, 1.25] as const).flatMap((x, xIndex) =>
-          ([-0.62, 0.62] as const).map((z, zIndex) => (
-            <Block
-              key={`${x}-${z}`}
-              part={`${xIndex === 0 ? "front" : "rear"}-${zIndex === 0 ? "left" : "right"}-leg`}
-              position={[x, 1.05, z]}
-              size={PARTS.legs.size}
-              texture={textures.legs}
-            />
-          )),
+        {detailMode === "detailed" ? (
+          <DetailFallbackBoundary
+            fallback={<CoarseVoxelBody appearance={appearance} refs={animatedRefs} />}
+            onFallback={onDetailFallback}
+            resetKey={appearance.id}
+          >
+            <HighDensityVoxelBody appearance={appearance} {...animatedRefs} />
+          </DetailFallbackBoundary>
+        ) : (
+          <CoarseVoxelBody appearance={appearance} refs={animatedRefs} />
         )}
-
-        <mesh ref={leftEye} castShadow position={[-3.62, 3.43, -0.47]} userData={{ part: "left-eye" }}>
-          <boxGeometry args={[0.1, 0.34, 0.34]} />
-          <meshStandardMaterial color={appearance.palette.eye} roughness={0.7} />
-        </mesh>
-        <mesh ref={rightEye} castShadow position={[-3.62, 3.43, 0.47]} userData={{ part: "right-eye" }}>
-          <boxGeometry args={[0.1, 0.34, 0.34]} />
-          <meshStandardMaterial color={appearance.palette.eye} roughness={0.7} />
-        </mesh>
-        <mesh ref={leftBlink} visible={false} position={[-3.68, 3.43, -0.47]} userData={{ part: "left-blink" }}>
-          <boxGeometry args={[0.1, 0.06, 0.38]} />
-          <meshStandardMaterial color={appearance.palette.dark} />
-        </mesh>
-        <mesh ref={rightBlink} visible={false} position={[-3.68, 3.43, 0.47]} userData={{ part: "right-blink" }}>
-          <boxGeometry args={[0.1, 0.06, 0.38]} />
-          <meshStandardMaterial color={appearance.palette.dark} />
-        </mesh>
-        <Block part="nose" position={[-4.0, 2.98, 0]} size={[0.1, 0.23, 0.3]} color={appearance.palette.nose} />
-
-        <group ref={tailOne} position={[1.9, 2.65, 0]} userData={{ part: "tail-1-pivot" }}>
-          <Block part="tail-1" position={[0.72, 0, 0]} size={PARTS.tail.size} texture={textures.tail} />
-          <group ref={tailTwo} position={[1.43, 0, 0]} userData={{ part: "tail-2-pivot" }}>
-            <Block part="tail-2" position={[0.72, 0, 0]} size={PARTS.tail.size} texture={textures.tail} />
-            <group ref={tailThree} position={[1.43, 0, 0]} userData={{ part: "tail-3-pivot" }}>
-              <Block part="tail-3" position={[0.72, 0, 0]} size={PARTS.tail.size} texture={textures.tail} />
-            </group>
-          </group>
-        </group>
       </group>
     </group>
   );
