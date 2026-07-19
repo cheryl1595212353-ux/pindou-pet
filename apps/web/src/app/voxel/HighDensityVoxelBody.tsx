@@ -48,6 +48,10 @@ export function createVoxelInstanceDescriptors(
   }));
 }
 
+export function createVoxelMaterial(): MeshStandardMaterial {
+  return new MeshStandardMaterial({ roughness: 0.86 });
+}
+
 interface VoxelInstancesProps {
   readonly appearance: CatAppearance;
   readonly cells: readonly VoxelCell[];
@@ -118,7 +122,7 @@ export function HighDensityVoxelBody({
     [],
   );
   const material = useMemo(
-    () => new MeshStandardMaterial({ roughness: 0.86, vertexColors: true }),
+    createVoxelMaterial,
     [],
   );
 
