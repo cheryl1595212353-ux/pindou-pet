@@ -93,6 +93,18 @@ describe("three-view visual hull", () => {
     expect(performance.main.length).toBeLessThan(detailed.main.length);
   });
 
+  it("keeps physical size while changing voxel density", () => {
+    const detailed = build({ length: 24, height: 20, width: 12 });
+    const performance = build({ length: 16, height: 12, width: 8 });
+    const size = (model: PersonalizedVoxelModel, axis: 0 | 1 | 2) =>
+      model.bounds.max[axis] - model.bounds.min[axis] + model.voxelSize;
+
+    expect(performance.voxelSize).toBeGreaterThan(detailed.voxelSize);
+    expect(size(performance, 0)).toBeCloseTo(size(detailed, 0), 1);
+    expect(size(performance, 1)).toBeCloseTo(size(detailed, 1), 1);
+    expect(size(performance, 2)).toBeCloseTo(size(detailed, 2), 1);
+  });
+
   it("widens only the high front region for the head-width correction", () => {
     const resolution = { length: 20, height: 16, width: 10 };
     const original = build(resolution);

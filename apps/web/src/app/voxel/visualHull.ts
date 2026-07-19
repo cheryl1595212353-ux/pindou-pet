@@ -15,13 +15,17 @@ import type {
 type Grid3 = readonly [number, number, number];
 type Vec3 = readonly [number, number, number];
 
-const VOXEL_STEP = 0.1;
+export const DETAILED_RESOLUTION = { length: 56, height: 48, width: 24 } as const;
+export const PERFORMANCE_RESOLUTION = { length: 36, height: 32, width: 16 } as const;
+
+const DETAILED_EXTENT = {
+  length: DETAILED_RESOLUTION.length * 0.1,
+  height: DETAILED_RESOLUTION.height * 0.1,
+  width: DETAILED_RESOLUTION.width * 0.1,
+} as const;
 const NEIGHBORS: readonly Grid3[] = [
   [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1],
 ];
-
-export const DETAILED_RESOLUTION = { length: 56, height: 48, width: 24 } as const;
-export const PERFORMANCE_RESOLUTION = { length: 36, height: 32, width: 16 } as const;
 
 export interface VoxelResolution {
   readonly length: number;
@@ -53,6 +57,7 @@ export interface ModelAnchors {
 export interface PersonalizedVoxelModel {
   readonly main: readonly PersonalizedVoxelCell[];
   readonly tailSegment: readonly PersonalizedVoxelCell[];
+  readonly voxelSize: number;
   readonly anchors: ModelAnchors;
   readonly bounds: { readonly min: Vec3; readonly max: Vec3 };
   readonly palette: readonly string[];
@@ -161,12 +166,13 @@ function correctedPosition(
   grid: Grid3,
   resolution: VoxelResolution,
   corrections: ShapeCorrections,
+  steps: Vec3,
 ): Vec3 {
   const [x, y, z] = grid;
   const centerX = (resolution.length - 1) / 2;
   const centerZ = (resolution.width - 1) / 2;
-  let worldX = (x - centerX) * VOXEL_STEP * corrections.bodyLength;
-  let worldZ = (z - centerZ) * VOXEL_STEP;
+  let worldX = (x - centerX) * steps[0] * corrections.bodyLength;
+  let worldZ = (z - centerZ) * steps[2];
   const legLimit = (resolution.height - 1) * 0.32;
   let correctedY = y <= legLimit
     ? y * corrections.legLength
@@ -179,7 +185,7 @@ function correctedPosition(
   }
   worldX = Number(worldX.toFixed(4));
   worldZ = Number(worldZ.toFixed(4));
-  return [worldX, Number((correctedY * VOXEL_STEP).toFixed(4)), worldZ];
+  return [worldX, Number((correctedY * steps[1]).toFixed(4)), worldZ];
 }
 
 function boundsOf(cells: readonly PersonalizedVoxelCell[]): PersonalizedVoxelModel["bounds"] {
@@ -194,6 +200,7 @@ function tailCells(
   profile: TailProfile,
   corrections: ShapeCorrections,
   palette: readonly string[],
+  steps: Vec3,
 ): { readonly cells: readonly PersonalizedVoxelCell[]; readonly nextPivotX: number } {
   const totalLength = Math.max(9, Math.min(36, Math.round(resolution.length * profile.lengthRatio)));
   const segmentLength = Math.max(3, Math.round(totalLength / 3));
@@ -208,10 +215,10 @@ function tailCells(
   const center = (thickness - 1) / 2;
   const cells = surfaceOnly(occupied).map((grid) => ({
     grid,
-    position: [grid[0] * VOXEL_STEP, (grid[1] - center) * VOXEL_STEP, (grid[2] - center) * VOXEL_STEP] as Vec3,
+    position: [grid[0] * steps[0], (grid[1] - center) * steps[1], (grid[2] - center) * steps[2]] as Vec3,
     color,
   }));
-  return { cells, nextPivotX: segmentLength * VOXEL_STEP };
+  return { cells, nextPivotX: segmentLength * steps[0] };
 }
 
 export function buildPersonalizedVoxelModel(args: {
@@ -222,6 +229,16 @@ export function buildPersonalizedVoxelModel(args: {
   readonly tailProfile: TailProfile;
 }): PersonalizedVoxelModel {
   const { views, appearance, corrections, resolution, tailProfile } = args;
+  const voxelSize = Math.min(
+    DETAILED_EXTENT.length / resolution.length,
+    DETAILED_EXTENT.height / resolution.height,
+    DETAILED_EXTENT.width / resolution.width,
+  ) * 0.94;
+  const steps: Vec3 = [
+    (DETAILED_EXTENT.length - voxelSize) / Math.max(1, resolution.length - 1),
+    (DETAILED_EXTENT.height - voxelSize) / Math.max(1, resolution.height - 1),
+    (DETAILED_EXTENT.width - voxelSize) / Math.max(1, resolution.width - 1),
+  ];
   const expanded = {
     front: { ...views.front, data: dilateMask(views.front, 1).data },
     side: { ...views.side, data: dilateMask(views.side, 1).data },
@@ -255,20 +272,20 @@ export function buildPersonalizedVoxelModel(args: {
     if (!occupiedSet.has(gridCellKey([x - 1, y, z]))) view = "front";
     else if (!occupiedSet.has(gridCellKey([x, y + 1, z]))) view = "top";
     const sample = sampleViewColor(views[view], viewCoordinates(view, grid, resolution, views[view]), fallback);
-    return { grid, position: correctedPosition(grid, resolution, corrections), color: nearestPaletteColor(sample, palette) };
+    return { grid, position: correctedPosition(grid, resolution, corrections, steps), color: nearestPaletteColor(sample, palette) };
   });
   const bounds = boundsOf(main);
-  const tail = tailCells(resolution, tailProfile, corrections, palette);
+  const tail = tailCells(resolution, tailProfile, corrections, palette, steps);
   const height = bounds.max[1] - bounds.min[1];
   const width = bounds.max[2] - bounds.min[2];
   const anchors: ModelAnchors = {
-    faceX: bounds.min[0] - VOXEL_STEP * 0.55,
+    faceX: bounds.min[0] - voxelSize * 0.55,
     eyeY: bounds.min[1] + height * 0.73,
     eyeZ: Math.max(0.22, width * 0.22),
     noseY: bounds.min[1] + height * 0.62,
-    tailPivot: [bounds.max[0] + VOXEL_STEP * 0.5, bounds.min[1] + height * 0.52, 0],
+    tailPivot: [bounds.max[0] + voxelSize * 0.5, bounds.min[1] + height * 0.52, 0],
     tailNextPivotX: tail.nextPivotX,
   };
 
-  return { main, tailSegment: tail.cells, anchors, bounds, palette };
+  return { main, tailSegment: tail.cells, voxelSize, anchors, bounds, palette };
 }
