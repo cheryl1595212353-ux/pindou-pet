@@ -31,107 +31,115 @@ export interface DogClip {
   readonly durations: readonly number[];
   readonly loop: boolean;
   readonly status: string;
+  /** @deprecated Use the name-free status field for new UI. */
+  readonly label: string;
+}
+
+type DogClipDefinition = Omit<DogClip, "label">;
+
+function defineClip(clip: DogClipDefinition): DogClip {
+  return { ...clip, label: `豆包${clip.status}` };
 }
 
 export const DOG_CLIPS: Readonly<Record<PixelDogState, DogClip>> = {
-  idle: {
+  idle: defineClip({
     row: 0,
     frameCount: 6,
     durations: [280, 110, 110, 140, 140, 320],
     loop: true,
     status: "正在呼吸和眨眼",
-  },
-  "moving-right": {
+  }),
+  "moving-right": defineClip({
     row: 1,
     frameCount: 8,
     durations: [120, 120, 120, 120, 120, 120, 120, 220],
     loop: true,
     status: "正在向右走",
-  },
-  "moving-left": {
+  }),
+  "moving-left": defineClip({
     row: 2,
     frameCount: 8,
     durations: [120, 120, 120, 120, 120, 120, 120, 220],
     loop: true,
     status: "正在向左走",
-  },
-  happy: {
+  }),
+  happy: defineClip({
     row: 3,
     frameCount: 4,
     durations: [140, 140, 140, 280],
     loop: false,
     status: "很开心",
-  },
-  jumping: {
+  }),
+  jumping: defineClip({
     row: 4,
     frameCount: 5,
     durations: [140, 140, 140, 140, 280],
     loop: false,
     status: "跳起来了",
-  },
-  sleeping: {
+  }),
+  sleeping: defineClip({
     row: 5,
     frameCount: 8,
     durations: [140, 140, 140, 140, 140, 140, 140, 240],
     loop: true,
     status: "睡着了",
-  },
-  waiting: {
+  }),
+  waiting: defineClip({
     row: 6,
     frameCount: 6,
     durations: [150, 150, 150, 150, 150, 260],
     loop: true,
     status: "在等你",
-  },
-  feeding: {
+  }),
+  feeding: defineClip({
     row: 7,
     frameCount: 6,
     durations: [120, 120, 120, 120, 120, 220],
     loop: false,
     status: "正在吃饭",
-  },
-  petting: {
+  }),
+  petting: defineClip({
     row: 8,
     frameCount: 6,
     durations: [150, 150, 150, 150, 150, 280],
     loop: true,
     status: "正在享受抚摸",
-  },
-  "playing-ball": {
+  }),
+  "playing-ball": defineClip({
     row: 4,
     frameCount: 5,
     durations: [140, 140, 140, 140, 280],
     loop: false,
     status: "正在玩球",
-  },
-  grooming: {
+  }),
+  grooming: defineClip({
     row: 8,
     frameCount: 6,
     durations: [150, 150, 150, 150, 150, 280],
     loop: false,
     status: "正在梳毛",
-  },
-  bathing: {
+  }),
+  bathing: defineClip({
     row: 6,
     frameCount: 6,
     durations: [150, 150, 150, 150, 150, 260],
     loop: false,
     status: "正在洗澡",
-  },
-  dancing: {
+  }),
+  dancing: defineClip({
     row: 3,
     frameCount: 4,
     durations: [140, 140, 140, 280],
     loop: false,
     status: "正在跳舞",
-  },
-  posing: {
+  }),
+  posing: defineClip({
     row: 3,
     frameCount: 4,
     durations: [140, 140, 140, 280],
     loop: false,
     status: "正在摆姿势拍照",
-  },
+  }),
 };
 
 export type DogEvent =

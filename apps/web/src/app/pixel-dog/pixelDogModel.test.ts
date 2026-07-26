@@ -70,6 +70,13 @@ describe("pixel dog model", () => {
     expect(DOG_CLIPS.posing.row).toBe(3);
   });
 
+  it("keeps name-free statuses while preserving the current UI labels", () => {
+    for (const clip of Object.values(DOG_CLIPS)) {
+      expect(clip.status).not.toContain("豆包");
+      expect(clip.label).toBe(`豆包${clip.status}`);
+    }
+  });
+
   it("supports petting, inactivity, sleep, and wake-up", () => {
     expect(dogReducer("idle", { type: "pet-start" })).toBe("petting");
     expect(dogReducer("petting", { type: "pet-end" })).toBe("idle");
