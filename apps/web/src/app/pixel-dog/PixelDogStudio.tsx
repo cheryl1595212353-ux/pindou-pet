@@ -130,6 +130,7 @@ export function PixelDogStudio() {
   }, []);
 
   const selectPet = (nextPetId: PetId) => {
+    if (nextPetId === petId) return;
     setPetId(nextPetId);
     setAssetFailed(false);
     interact({ type: "wake" });
@@ -299,6 +300,9 @@ export function PixelDogStudio() {
               </button>
             ))}
           </div>
+          <p aria-live="polite" className="pixel-dog-scene-feedback">
+            当前场景：{scene.displayName}
+          </p>
         </div>
 
         <p className="pixel-dog-tips">

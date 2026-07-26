@@ -55,6 +55,18 @@ describe("PixelDogStudio", () => {
     );
   });
 
+  it("announces scene changes while the pet remains idle", () => {
+    render(<PixelDogStudio />);
+
+    const sceneAnnouncement = screen.getByText("当前场景：客厅");
+    expect(sceneAnnouncement).toHaveAttribute("aria-live", "polite");
+
+    fireEvent.click(screen.getByRole("button", { name: "切换场景：星光露营" }));
+
+    expect(sceneAnnouncement).toHaveTextContent("当前场景：星光露营");
+    expect(screen.getByRole("status")).toHaveTextContent("豆包正在呼吸和眨眼");
+  });
+
   it("keeps the current scene and stage position when changing pets", () => {
     const { container } = render(<PixelDogStudio />);
 
@@ -87,6 +99,20 @@ describe("PixelDogStudio", () => {
       'background-image: url("/pixel-dog/xuetuan/spritesheet.webp")',
     );
     expect(scene?.style.getPropertyValue("--dog-ratio")).toBe(stagePosition);
+  });
+
+  it("retains an asset error until a different pet is selected", () => {
+    const { container } = render(<PixelDogStudio />);
+
+    fireEvent.error(container.querySelector(".pixel-dog-asset-probe")!);
+    expect(screen.getByRole("alert")).toHaveTextContent("豆包的动画图集没有加载成功");
+
+    fireEvent.click(screen.getByRole("button", { name: "选择宠物：豆包·红柴犬" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("豆包的动画图集没有加载成功");
+
+    fireEvent.click(screen.getByRole("button", { name: "选择宠物：雪团·比熊" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "抚摸或点击雪团" })).toBeVisible();
   });
 
   it("reacts to clicks, petting, feeding, and jumping", () => {
