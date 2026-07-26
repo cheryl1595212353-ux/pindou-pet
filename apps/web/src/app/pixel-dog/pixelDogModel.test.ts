@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import petManifest from "../../../public/pixel-dog/doubao/pet.json";
 import { PETS } from "./petCatalog";
+import { SCENES } from "./sceneCatalog";
 import {
   ATLAS_HEIGHT,
   ATLAS_WIDTH,
@@ -18,6 +19,17 @@ import {
 } from "./pixelDogModel";
 
 describe("pixel dog model", () => {
+  it("locks the requested multi-pet, scene, and interaction scope", () => {
+    expect(PETS).toHaveLength(5);
+    expect(new Set(PETS.map((pet) => pet.id)).size).toBe(5);
+    expect(SCENES).toHaveLength(6);
+    expect(new Set(SCENES.map((scene) => scene.id)).size).toBe(6);
+    expect(
+      ["playing-ball", "grooming", "bathing", "dancing", "posing"]
+        .every((state) => state in DOG_CLIPS),
+    ).toBe(true);
+  });
+
   it("maps every product state onto the fixed nine-row pet atlas", () => {
     expect(Object.values(DOG_CLIPS).map((clip) => clip.row)).toEqual([
       0, 1, 2, 3, 4, 5, 6, 7, 8, 4, 8, 6, 3, 3,
