@@ -6,7 +6,7 @@
     "path": "base.png",
     "width": 128,
     "height": 128,
-    "visibleColors": 32,
+    "visibleColors": 22,
     "alphaValues": [
       0,
       255
