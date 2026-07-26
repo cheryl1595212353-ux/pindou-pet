@@ -9,24 +9,27 @@ import {
   DOG_CLIPS,
   SLEEPING_AFTER_MS,
   WAITING_AFTER_MS,
+  MAX_STAGE_POSITION,
+  MIN_STAGE_POSITION,
   clampStagePosition,
   dogReducer,
+  getPropSide,
 } from "./pixelDogModel";
 
 describe("pixel dog model", () => {
   it("maps every product state onto the fixed nine-row pet atlas", () => {
     expect(Object.values(DOG_CLIPS).map((clip) => clip.row)).toEqual([
-      0, 1, 2, 3, 4, 5, 6, 7, 8,
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 4, 8, 6, 3, 3,
     ]);
     expect(Object.values(DOG_CLIPS).map((clip) => clip.frameCount)).toEqual([
-      6, 8, 8, 4, 5, 8, 6, 6, 6,
+      6, 8, 8, 4, 5, 8, 6, 6, 6, 5, 6, 6, 4, 4,
     ]);
     expect([CELL_WIDTH, CELL_HEIGHT, ATLAS_WIDTH, ATLAS_HEIGHT]).toEqual([
       192, 208, 1536, 1872,
     ]);
-    expect(Object.keys(petManifest.states)).toEqual(Object.keys(DOG_CLIPS));
+    expect(Object.keys(petManifest.states)).toEqual(Object.keys(DOG_CLIPS).slice(0, 9));
     expect(Object.values(petManifest.states).map((clip) => clip.row)).toEqual(
-      Object.values(DOG_CLIPS).map((clip) => clip.row),
+      Object.values(DOG_CLIPS).slice(0, 9).map((clip) => clip.row),
     );
   });
 
@@ -45,6 +48,26 @@ describe("pixel dog model", () => {
     expect(dogReducer("jumping", { type: "complete" })).toBe("idle");
     expect(dogReducer("idle", { type: "feed" })).toBe("feeding");
     expect(dogReducer("feeding", { type: "complete" })).toBe("idle");
+
+    expect(dogReducer("idle", { type: "play-ball" })).toBe("playing-ball");
+    expect(dogReducer("idle", { type: "groom" })).toBe("grooming");
+    expect(dogReducer("idle", { type: "bathe" })).toBe("bathing");
+    expect(dogReducer("idle", { type: "dance" })).toBe("dancing");
+    expect(dogReducer("idle", { type: "pose" })).toBe("posing");
+
+    for (const state of [
+      "playing-ball", "grooming", "bathing", "dancing", "posing",
+    ] as const) {
+      expect(dogReducer(state, { type: "complete" })).toBe("idle");
+    }
+  });
+
+  it("maps new interactions onto their required atlas rows", () => {
+    expect(DOG_CLIPS["playing-ball"].row).toBe(4);
+    expect(DOG_CLIPS.grooming.row).toBe(8);
+    expect(DOG_CLIPS.bathing.row).toBe(6);
+    expect(DOG_CLIPS.dancing.row).toBe(3);
+    expect(DOG_CLIPS.posing.row).toBe(3);
   });
 
   it("supports petting, inactivity, sleep, and wake-up", () => {
@@ -65,5 +88,10 @@ describe("pixel dog model", () => {
     expect(clampStagePosition(-100)).toBe(8);
     expect(clampStagePosition(50)).toBe(50);
     expect(clampStagePosition(200)).toBe(92);
+  });
+
+  it("places props on the side opposite the pet at each stage boundary", () => {
+    expect(getPropSide(MIN_STAGE_POSITION)).toBe("right");
+    expect(getPropSide(MAX_STAGE_POSITION)).toBe("left");
   });
 });

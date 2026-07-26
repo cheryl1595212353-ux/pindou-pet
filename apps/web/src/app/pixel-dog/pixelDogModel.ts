@@ -18,14 +18,19 @@ export type PixelDogState =
   | "sleeping"
   | "waiting"
   | "feeding"
-  | "petting";
+  | "petting"
+  | "playing-ball"
+  | "grooming"
+  | "bathing"
+  | "dancing"
+  | "posing";
 
 export interface DogClip {
   readonly row: number;
   readonly frameCount: number;
   readonly durations: readonly number[];
   readonly loop: boolean;
-  readonly label: string;
+  readonly status: string;
 }
 
 export const DOG_CLIPS: Readonly<Record<PixelDogState, DogClip>> = {
@@ -34,63 +39,98 @@ export const DOG_CLIPS: Readonly<Record<PixelDogState, DogClip>> = {
     frameCount: 6,
     durations: [280, 110, 110, 140, 140, 320],
     loop: true,
-    label: "豆包正在呼吸和眨眼",
+    status: "正在呼吸和眨眼",
   },
   "moving-right": {
     row: 1,
     frameCount: 8,
     durations: [120, 120, 120, 120, 120, 120, 120, 220],
     loop: true,
-    label: "豆包正在向右走",
+    status: "正在向右走",
   },
   "moving-left": {
     row: 2,
     frameCount: 8,
     durations: [120, 120, 120, 120, 120, 120, 120, 220],
     loop: true,
-    label: "豆包正在向左走",
+    status: "正在向左走",
   },
   happy: {
     row: 3,
     frameCount: 4,
     durations: [140, 140, 140, 280],
     loop: false,
-    label: "豆包很开心",
+    status: "很开心",
   },
   jumping: {
     row: 4,
     frameCount: 5,
     durations: [140, 140, 140, 140, 280],
     loop: false,
-    label: "豆包跳起来了",
+    status: "跳起来了",
   },
   sleeping: {
     row: 5,
     frameCount: 8,
     durations: [140, 140, 140, 140, 140, 140, 140, 240],
     loop: true,
-    label: "豆包睡着了",
+    status: "睡着了",
   },
   waiting: {
     row: 6,
     frameCount: 6,
     durations: [150, 150, 150, 150, 150, 260],
     loop: true,
-    label: "豆包在等你",
+    status: "在等你",
   },
   feeding: {
     row: 7,
     frameCount: 6,
     durations: [120, 120, 120, 120, 120, 220],
     loop: false,
-    label: "豆包正在吃饭",
+    status: "正在吃饭",
   },
   petting: {
     row: 8,
     frameCount: 6,
     durations: [150, 150, 150, 150, 150, 280],
     loop: true,
-    label: "豆包正在享受抚摸",
+    status: "正在享受抚摸",
+  },
+  "playing-ball": {
+    row: 4,
+    frameCount: 5,
+    durations: [140, 140, 140, 140, 280],
+    loop: false,
+    status: "正在玩球",
+  },
+  grooming: {
+    row: 8,
+    frameCount: 6,
+    durations: [150, 150, 150, 150, 150, 280],
+    loop: false,
+    status: "正在梳毛",
+  },
+  bathing: {
+    row: 6,
+    frameCount: 6,
+    durations: [150, 150, 150, 150, 150, 260],
+    loop: false,
+    status: "正在洗澡",
+  },
+  dancing: {
+    row: 3,
+    frameCount: 4,
+    durations: [140, 140, 140, 280],
+    loop: false,
+    status: "正在跳舞",
+  },
+  posing: {
+    row: 3,
+    frameCount: 4,
+    durations: [140, 140, 140, 280],
+    loop: false,
+    status: "正在摆姿势拍照",
   },
 };
 
@@ -105,9 +145,23 @@ export type DogEvent =
   | { readonly type: "wait" }
   | { readonly type: "sleep" }
   | { readonly type: "wake" }
+  | { readonly type: "play-ball" }
+  | { readonly type: "groom" }
+  | { readonly type: "bathe" }
+  | { readonly type: "dance" }
+  | { readonly type: "pose" }
   | { readonly type: "complete" };
 
-const ONE_SHOT_STATES = new Set<PixelDogState>(["happy", "jumping", "feeding"]);
+const ONE_SHOT_STATES = new Set<PixelDogState>([
+  "happy",
+  "jumping",
+  "feeding",
+  "playing-ball",
+  "grooming",
+  "bathing",
+  "dancing",
+  "posing",
+]);
 
 export function dogReducer(state: PixelDogState, event: DogEvent): PixelDogState {
   switch (event.type) {
@@ -131,6 +185,16 @@ export function dogReducer(state: PixelDogState, event: DogEvent): PixelDogState
       return state === "idle" || state === "waiting" ? "sleeping" : state;
     case "wake":
       return "idle";
+    case "play-ball":
+      return "playing-ball";
+    case "groom":
+      return "grooming";
+    case "bathe":
+      return "bathing";
+    case "dance":
+      return "dancing";
+    case "pose":
+      return "posing";
     case "complete":
       return ONE_SHOT_STATES.has(state) ? "idle" : state;
   }
@@ -138,4 +202,8 @@ export function dogReducer(state: PixelDogState, event: DogEvent): PixelDogState
 
 export function clampStagePosition(value: number): number {
   return Math.min(MAX_STAGE_POSITION, Math.max(MIN_STAGE_POSITION, value));
+}
+
+export function getPropSide(stagePosition: number): "left" | "right" {
+  return stagePosition > 70 ? "left" : "right";
 }
