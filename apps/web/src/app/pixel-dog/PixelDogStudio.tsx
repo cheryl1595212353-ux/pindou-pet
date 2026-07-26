@@ -340,6 +340,7 @@ export function PixelDogStudio() {
         </div>
 
         <div className="pixel-dog-scene" style={sceneStyle}>
+          <div aria-hidden="true" className="pixel-dog-ambient" />
           <div className="pixel-dog-sunpatch" aria-hidden="true" />
           <div className="pixel-dog-window" aria-hidden="true">
             <span />

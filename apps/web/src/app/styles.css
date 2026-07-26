@@ -107,7 +107,9 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 
 .pixel-dog-studio {
   display: grid;
+  width: 100%;
   min-height: calc(100svh - 66px);
+  overflow-x: clip;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
   background: #f8f1e6;
 }
@@ -115,10 +117,12 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 .pixel-dog-intro {
   display: flex;
   min-width: 0;
+  max-height: calc(100svh - 66px);
   padding: clamp(30px, 5vh, 64px) clamp(24px, 3.4vw, 50px);
+  overflow-y: auto;
   border-right: 1px solid #251f1a;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .pixel-dog-intro h1 { max-width: 7ch; }
@@ -146,6 +150,127 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 
 .pixel-dog-facts dt { color: #938577; }
 .pixel-dog-facts dd { margin: 0; font-weight: 800; }
+
+.pixel-dog-selector-group {
+  min-width: 0;
+  margin-top: 16px;
+}
+
+.pixel-dog-selector-group > p:first-child {
+  margin: 0 0 7px;
+  color: #75695e;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .08em;
+}
+
+.pixel-dog-pet-selector,
+.pixel-dog-scene-selector {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  padding: 2px 2px 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 7px;
+  overscroll-behavior-x: contain;
+  scrollbar-color: #8e8175 transparent;
+  scrollbar-width: thin;
+}
+
+.pixel-dog-pet-selector button,
+.pixel-dog-scene-selector button {
+  display: grid;
+  min-width: 0;
+  padding: 5px;
+  color: #3f372f;
+  border: 1px solid rgb(37 31 26 / 45%);
+  background: #efe5d7;
+  box-shadow: 3px 3px 0 rgb(37 31 26 / 18%);
+  cursor: pointer;
+  gap: 3px;
+  text-align: left;
+  transition: color .14s ease, background .14s ease, box-shadow .14s ease, transform .14s ease;
+}
+
+.pixel-dog-pet-selector button {
+  flex: 0 0 82px;
+  grid-template-rows: 54px auto auto;
+}
+
+.pixel-dog-scene-selector button {
+  flex: 0 0 132px;
+  grid-template-rows: 68px auto auto;
+}
+
+.pixel-dog-pet-selector img,
+.pixel-dog-scene-selector img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #dfd2c1;
+  image-rendering: pixelated;
+  object-fit: cover;
+}
+
+.pixel-dog-pet-selector img { object-fit: contain; }
+
+.pixel-dog-pet-selector strong,
+.pixel-dog-scene-selector strong,
+.pixel-dog-pet-selector small,
+.pixel-dog-scene-selector small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pixel-dog-pet-selector strong,
+.pixel-dog-scene-selector strong {
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.pixel-dog-pet-selector small,
+.pixel-dog-scene-selector small {
+  color: #7d7165;
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+.pixel-dog-pet-selector button:hover,
+.pixel-dog-scene-selector button:hover,
+.pixel-dog-pet-selector button:focus-visible,
+.pixel-dog-scene-selector button:focus-visible {
+  border-color: #251f1a;
+  outline: 2px solid #2b8e73;
+  outline-offset: 1px;
+}
+
+.pixel-dog-pet-selector button[aria-pressed="true"],
+.pixel-dog-scene-selector button[aria-pressed="true"] {
+  color: #fffaf1;
+  border-color: #251f1a;
+  background: #2b8e73;
+  box-shadow: 1px 1px 0 #251f1a;
+  transform: translate(2px, 2px);
+}
+
+.pixel-dog-pet-selector button[aria-pressed="true"] small,
+.pixel-dog-scene-selector button[aria-pressed="true"] small {
+  color: #e5f2ea;
+}
+
+.pixel-dog-scene-feedback {
+  margin: 4px 2px 0;
+  overflow: hidden;
+  color: #6b5f53;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .pixel-dog-tips {
   margin: 22px 0 0;
@@ -204,14 +329,13 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   min-height: 470px;
   overflow: hidden;
   border: 1px solid rgb(37 31 26 / 28%);
-  background-color: #ecdbc0;
-  background-image:
-    radial-gradient(640px 360px at 16% 0%, rgb(255 238 196 / 60%), transparent 72%),
-    linear-gradient(rgb(37 31 26 / 4%) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(37 31 26 / 4%) 1px, transparent 1px),
-    linear-gradient(#f0e0c7, #e5cfac 82%);
-  background-size: auto, 26px 26px, 26px 26px, auto;
+  background-color: #7f756a;
+  background-image: var(--scene-background);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
   box-shadow: 12px 14px 0 rgb(37 31 26 / 13%);
+  isolation: isolate;
 }
 
 .pixel-dog-scene::before {
@@ -365,6 +489,148 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   transform: translateX(-50%);
 }
 
+.pixel-dog-scene::before,
+.pixel-dog-scene::after,
+.pixel-dog-scene > .pixel-dog-sunpatch,
+.pixel-dog-scene > .pixel-dog-window,
+.pixel-dog-scene > .pixel-dog-frames,
+.pixel-dog-scene > .pixel-dog-shelf,
+.pixel-dog-scene > .pixel-dog-plant,
+.pixel-dog-scene > .pixel-dog-rug {
+  display: none;
+}
+
+.pixel-dog-ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  opacity: .68;
+  pointer-events: none;
+}
+
+.pixel-dog-ambient::before,
+.pixel-dog-ambient::after {
+  position: absolute;
+  content: "";
+}
+
+.pixel-dog-room[data-scene="living-room"] .pixel-dog-ambient::before {
+  inset: -12%;
+  background: linear-gradient(112deg, transparent 30%, rgb(255 238 177 / 22%) 46%, transparent 63%);
+  animation: pixel-ambient-sun 9s ease-in-out infinite alternate;
+}
+
+.pixel-dog-room[data-scene="living-room"] .pixel-dog-ambient::after {
+  top: 28%;
+  left: 24%;
+  width: 5px;
+  height: 5px;
+  background: rgb(255 244 207 / 74%);
+  box-shadow: 54px 42px 0 rgb(255 244 207 / 45%), 146px -18px 0 rgb(255 244 207 / 58%), 232px 68px 0 rgb(255 244 207 / 38%);
+  animation: pixel-ambient-dust 6s steps(6, end) infinite;
+}
+
+.pixel-dog-room[data-scene="garden"] .pixel-dog-ambient::before {
+  top: 20%;
+  left: 8%;
+  width: 8px;
+  height: 6px;
+  background: #e9cf4e;
+  box-shadow: 96px 28px 0 #4d9a58, 214px -16px 0 #ec8e99, 332px 48px 0 #6aac4b, 476px 12px 0 #ebc94c;
+  animation: pixel-ambient-leaves 7s steps(8, end) infinite;
+}
+
+.pixel-dog-room[data-scene="garden"] .pixel-dog-ambient::after {
+  top: 15%;
+  right: 18%;
+  width: 16px;
+  height: 12px;
+  background: linear-gradient(90deg, #f19ab0 0 6px, transparent 6px 10px, #f19ab0 10px);
+  animation: pixel-ambient-butterfly 3.8s steps(6, end) infinite alternate;
+}
+
+.pixel-dog-room[data-scene="beach"] .pixel-dog-ambient::before {
+  top: 31%;
+  left: -10%;
+  width: 120%;
+  height: 14px;
+  border-top: 3px solid rgb(255 255 255 / 52%);
+  background: repeating-linear-gradient(90deg, transparent 0 34px, rgb(255 255 255 / 34%) 34px 62px);
+  animation: pixel-ambient-wave 4.2s ease-in-out infinite alternate;
+}
+
+.pixel-dog-room[data-scene="beach"] .pixel-dog-ambient::after {
+  top: 8%;
+  left: 18%;
+  width: 72px;
+  height: 16px;
+  background: rgb(255 255 255 / 23%);
+  box-shadow: 28px -8px 0 rgb(255 255 255 / 18%), 178px 22px 0 rgb(255 255 255 / 16%);
+  animation: pixel-ambient-cloud 12s linear infinite alternate;
+}
+
+.pixel-dog-room[data-scene="snow-cabin"] .pixel-dog-ambient::before {
+  inset: -20% 0 0;
+  background-image:
+    radial-gradient(circle, rgb(255 255 255 / 82%) 0 2px, transparent 3px),
+    radial-gradient(circle, rgb(255 255 255 / 55%) 0 1px, transparent 2px);
+  background-position: 0 0, 22px 18px;
+  background-size: 54px 54px, 38px 38px;
+  animation: pixel-ambient-snow 8s linear infinite;
+}
+
+.pixel-dog-room[data-scene="snow-cabin"] .pixel-dog-ambient::after {
+  inset: 0;
+  background: radial-gradient(circle at 64% 42%, rgb(255 127 45 / 18%), transparent 26%);
+  animation: pixel-ambient-fire 2.4s steps(4, end) infinite alternate;
+}
+
+.pixel-dog-room[data-scene="camping"] .pixel-dog-ambient::before {
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 58%;
+  background-image:
+    radial-gradient(circle, rgb(255 255 225 / 85%) 0 1px, transparent 2px),
+    radial-gradient(circle, rgb(122 188 255 / 58%) 0 1px, transparent 2px);
+  background-position: 8px 5px, 29px 22px;
+  background-size: 48px 42px, 62px 54px;
+  animation: pixel-ambient-twinkle 3.4s steps(3, end) infinite alternate;
+}
+
+.pixel-dog-room[data-scene="camping"] .pixel-dog-ambient::after {
+  right: 0;
+  bottom: 8%;
+  left: 0;
+  height: 42%;
+  background-image: radial-gradient(circle, rgb(255 222 89 / 88%) 0 2px, transparent 3px);
+  background-position: 12px 8px;
+  background-size: 86px 62px;
+  animation: pixel-ambient-fireflies 6s steps(8, end) infinite alternate;
+}
+
+.pixel-dog-room[data-scene="rooftop"] .pixel-dog-ambient::before {
+  top: 19%;
+  right: 0;
+  left: 0;
+  height: 25%;
+  background-image: radial-gradient(circle, rgb(255 211 112 / 58%) 0 2px, transparent 3px);
+  background-position: 9px 7px;
+  background-size: 72px 38px;
+  animation: pixel-ambient-twinkle 4s steps(4, end) infinite alternate;
+}
+
+.pixel-dog-room[data-scene="rooftop"] .pixel-dog-ambient::after {
+  top: 8%;
+  left: -24%;
+  width: 42%;
+  height: 18px;
+  background: linear-gradient(90deg, transparent, rgb(255 195 205 / 22%), transparent);
+  box-shadow: 210px 46px 0 rgb(255 195 205 / 12%);
+  animation: pixel-ambient-city-cloud 14s linear infinite;
+}
+
 .pixel-dog-state {
   position: absolute;
   z-index: 6;
@@ -490,9 +756,11 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   bottom: 54px;
   width: 44px;
   height: 44px;
+  animation: pixel-prop-ball 560ms steps(4, end) infinite alternate;
   background: #251f1a;
   clip-path: polygon(12px 0, 32px 0, 44px 12px, 44px 32px, 32px 44px, 12px 44px, 0 32px, 0 12px);
-  transform: translateX(72px);
+  transform-origin: 50% 100%;
+  transform: translateX(54px);
 }
 
 .pixel-dog-prop--ball span {
@@ -506,10 +774,11 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   bottom: 126px;
   width: 62px;
   height: 18px;
+  animation: pixel-prop-brush 720ms steps(5, end) infinite alternate;
   border: 4px solid #251f1a;
   background: #c37a4a;
   box-shadow: inset -12px 0 0 #e7bd75;
-  transform: translateX(54px) rotate(-24deg);
+  transform: translateX(36px) rotate(-24deg);
 }
 
 .pixel-dog-prop--brush span {
@@ -543,12 +812,14 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
     25px 9px 0 3px #d8eee8,
     62px -4px 0 1px #fffdf6,
     91px 10px 0 4px #d8eee8;
+  animation: pixel-prop-bubbles 680ms steps(4, end) infinite alternate;
 }
 
 .pixel-dog-prop--dance {
   bottom: 112px;
   width: 150px;
   height: 88px;
+  animation: pixel-prop-dance 420ms steps(2, end) infinite alternate;
   background:
     linear-gradient(#e3b851, #e3b851) 8px 8px / 10px 28px no-repeat,
     linear-gradient(#e3b851, #e3b851) 18px 8px / 20px 8px no-repeat,
@@ -556,6 +827,7 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
     linear-gradient(#c84831, #c84831) 112px 0 / 10px 32px no-repeat,
     linear-gradient(#c84831, #c84831) 122px 0 / 20px 8px no-repeat,
     linear-gradient(#c84831, #c84831) 101px 30px / 16px 12px no-repeat;
+  transform-origin: 50% 100%;
   transform: translateX(-50%);
 }
 
@@ -563,13 +835,15 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   bottom: 136px;
   width: 68px;
   height: 68px;
+  animation: pixel-prop-camera 520ms steps(3, end) both;
   background:
     linear-gradient(#fff2a8, #fff2a8) 28px 0 / 12px 68px no-repeat,
     linear-gradient(#fff2a8, #fff2a8) 0 28px / 68px 12px no-repeat,
     linear-gradient(45deg, transparent 38%, #f4c85e 38% 62%, transparent 62%),
     linear-gradient(-45deg, transparent 38%, #f4c85e 38% 62%, transparent 62%);
   filter: drop-shadow(3px 3px 0 rgb(37 31 26 / 24%));
-  transform: translateX(62px);
+  transform-origin: 50%;
+  transform: translateX(26px);
 }
 
 .pixel-dog-prop--camera span {
@@ -614,6 +888,7 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   min-width: 0;
   align-items: stretch;
   justify-content: flex-end;
+  flex-wrap: wrap;
   border-top: 1px solid rgb(37 31 26 / 22%);
   gap: 8px;
   padding-top: 13px;
@@ -673,7 +948,93 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 
 .pixel-dog-action-controls {
   display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
+}
+
+@keyframes pixel-ambient-sun {
+  from { transform: translateX(-7%) skewX(-3deg); }
+  to { transform: translateX(7%) skewX(3deg); }
+}
+
+@keyframes pixel-ambient-dust {
+  0%, 100% { opacity: .24; transform: translateY(8px); }
+  50% { opacity: .8; transform: translate(10px, -12px); }
+}
+
+@keyframes pixel-ambient-leaves {
+  from { transform: translate(-18px, -8px) rotate(0); }
+  to { transform: translate(56px, 74px) rotate(90deg); }
+}
+
+@keyframes pixel-ambient-butterfly {
+  from { opacity: .45; transform: translate(-12px, 10px) scaleX(.65); }
+  to { opacity: .88; transform: translate(18px, -10px) scaleX(1); }
+}
+
+@keyframes pixel-ambient-wave {
+  from { opacity: .35; transform: translateX(-2%); }
+  to { opacity: .65; transform: translateX(2%); }
+}
+
+@keyframes pixel-ambient-cloud {
+  from { transform: translateX(-24px); }
+  to { transform: translateX(72px); }
+}
+
+@keyframes pixel-ambient-snow {
+  from { transform: translateY(-54px); }
+  to { transform: translateY(54px); }
+}
+
+@keyframes pixel-ambient-fire {
+  from { opacity: .46; }
+  to { opacity: .9; }
+}
+
+@keyframes pixel-ambient-twinkle {
+  from { opacity: .35; }
+  to { opacity: .92; }
+}
+
+@keyframes pixel-ambient-fireflies {
+  from { opacity: .38; transform: translate(-8px, 10px); }
+  to { opacity: .88; transform: translate(14px, -12px); }
+}
+
+@keyframes pixel-ambient-city-cloud {
+  from { transform: translateX(0); }
+  to { transform: translateX(170%); }
+}
+
+@keyframes pixel-prop-ball {
+  0% { transform: translate(34px, 0) rotate(0); }
+  55% { transform: translate(52px, -24px) rotate(45deg); }
+  100% { transform: translate(62px, 0) rotate(90deg); }
+}
+
+@keyframes pixel-prop-brush {
+  from { transform: translate(-54px, 8px) rotate(-16deg); }
+  to { transform: translate(36px, -12px) rotate(-26deg); }
+}
+
+@keyframes pixel-prop-bubbles {
+  from { opacity: .42; transform: translateY(9px); }
+  to { opacity: 1; transform: translateY(-10px); }
+}
+
+@keyframes pixel-prop-dance {
+  from { opacity: .52; transform: translateX(-50%) scale(.86); }
+  to { opacity: 1; transform: translateX(-50%) scale(1.08); }
+}
+
+@keyframes pixel-prop-camera {
+  0% { opacity: 0; transform: translateX(26px) scale(.68); }
+  35% { opacity: 1; transform: translateX(26px) scale(1.15); }
+  70% { opacity: .34; transform: translateX(26px) scale(.94); }
+  100% { opacity: 0; transform: translateX(26px) scale(1); }
 }
 
 @media (max-width: 800px) {
@@ -684,45 +1045,73 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   .studio-intro { margin-bottom: 22px; }
   .studio-stage { min-height: 68svh; height: auto; padding: 18px 14px 22px; }
   .voxel-canvas-wrap { min-height: 430px; height: min(58svh, 560px); }
-  .pixel-dog-studio { grid-template-columns: 1fr; }
+  .pixel-dog-studio {
+    overflow-x: hidden;
+    grid-template-columns: 1fr;
+  }
+  .pixel-dog-intro {
+    max-height: none;
+    padding: 16px 14px 18px;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid #251f1a;
+  }
+  .pixel-dog-intro h1 {
+    max-width: none;
+    font-size: clamp(30px, 8vw, 38px);
+    line-height: 1;
+  }
+  .pixel-dog-intro h1 br { display: none; }
+  .pixel-dog-intro > p:not(.eyebrow),
+  .pixel-dog-facts,
+  .pixel-dog-tips { display: none; }
+  .pixel-dog-selector-group { margin-top: 10px; }
+  .pixel-dog-pet-selector button { flex-basis: 76px; }
+  .pixel-dog-scene-selector button { flex-basis: 124px; }
   .pixel-dog-room {
+    min-width: 0;
     min-height: 0;
     padding: 12px 12px 14px;
-    grid-template-rows: auto minmax(340px, 46svh) auto;
+    grid-template-rows: auto minmax(320px, 52svh) auto;
     gap: 10px;
   }
   .pixel-dog-scene { --dog-scale: 1.12; min-height: 320px; }
-  .pixel-dog-frames { display: none; }
-  .pixel-dog-sunpatch { left: 36px; width: 130px; }
   .pixel-dog-state {
     bottom: calc(42px + 208px * var(--dog-scale, 1.12));
     max-width: 190px;
     font-size: 11px;
   }
-  .pixel-dog-intro {
-    padding: 28px 20px 32px;
-    border-top: 1px solid #251f1a;
-    border-right: 0;
-  }
-  .pixel-dog-intro h1 { max-width: none; }
-  .pixel-dog-facts { margin: 20px 0 0; }
-  .pixel-dog-controls { flex-wrap: wrap; }
   .pixel-dog-action-controls {
     display: grid;
+    min-width: 0;
     flex: 1 0 100%;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
   }
-  .pixel-dog-action-controls button { min-height: 46px; padding: 0 8px; }
+  .pixel-dog-action-controls button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 4px;
+    font-size: 11px;
+  }
   .pixel-dog-move-controls {
+    min-width: 0;
     flex: 1 0 100%;
+    width: 100%;
     margin: 0;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 6px;
   }
-  .pixel-dog-move-controls button { min-height: 52px; }
+  .pixel-dog-move-controls button {
+    min-width: 0;
+    min-height: 48px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .pixel-dog-ambient::before,
+  .pixel-dog-ambient::after,
+  .pixel-dog-prop,
+  .pixel-dog-prop span { animation: none !important; }
 }
