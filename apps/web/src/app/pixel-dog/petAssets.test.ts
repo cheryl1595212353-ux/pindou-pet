@@ -19,6 +19,7 @@ interface FileSystemModule {
 }
 
 interface PathModule {
+  basename(path: string): string;
   dirname(path: string): string;
   join(...paths: string[]): string;
   resolve(...paths: string[]): string;
@@ -100,6 +101,8 @@ describe.each(PETS)("$displayName public pet assets", (pet) => {
     ) as PetManifest;
 
     expect(manifest.id).toBe(pet.id);
+    expect(manifest.spritesheetPath).toBe("spritesheet.webp");
+    expect(path.basename(pet.spritesheetPath)).toBe("spritesheet.webp");
     expect(manifest.base).toMatchObject({
       path: "base.png",
       width: 128,
