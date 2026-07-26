@@ -1,0 +1,471 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "date": "2026-07-27",
+  "timezone": "Asia/Shanghai",
+  "branch": "codex/interactive-pixel-dog",
+  "testedHead": "29b598f473f7950d25e7ca7988d5745f9cef033a",
+  "testedUrl": "http://127.0.0.1:5173/",
+  "servedWorktree": "/Users/chy/Desktop/xyf_projects/.worktrees/interactive-pixel-dog",
+  "browserSurface": "Codex In-app Browser",
+  "supplementalBrowserSurface": "Playwright browser session for real Tab traversal and reduced-motion emulation only",
+  "evidenceRoot": "/Users/chy/Desktop/xyf_projects/.worktrees/interactive-pixel-dog/var/interactive-pixel-dog/browser-qa/multi-pet-scenes",
+  "scope": {
+    "petCount": 5,
+    "sceneCount": 6,
+    "productStateCount": 14,
+    "newInteractionCount": 5,
+    "petIds": [
+      "doubao",
+      "jinbao",
+      "xuetuan",
+      "keke",
+      "jutuan"
+    ],
+    "sceneIds": [
+      "living-room",
+      "garden",
+      "beach",
+      "snow-cabin",
+      "camping",
+      "rooftop"
+    ],
+    "states": [
+      "idle",
+      "moving-right",
+      "moving-left",
+      "happy",
+      "jumping",
+      "sleeping",
+      "waiting",
+      "feeding",
+      "petting",
+      "playing-ball",
+      "grooming",
+      "bathing",
+      "dancing",
+      "posing"
+    ]
+  },
+  "pets": [
+    {
+      "id": "doubao",
+      "displayName": "豆包",
+      "breed": "红柴犬",
+      "heading": "和豆包一起玩",
+      "selectedLabel": "选择宠物：豆包·红柴犬",
+      "atlas": "/pixel-dog/doubao/spritesheet.webp",
+      "atlasSize": [1536, 1872],
+      "assetErrorCount": 0,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/pets/doubao.jpg"
+    },
+    {
+      "id": "jinbao",
+      "displayName": "金宝",
+      "breed": "金毛",
+      "heading": "和金宝一起玩",
+      "selectedLabel": "选择宠物：金宝·金毛",
+      "atlas": "/pixel-dog/jinbao/spritesheet.webp",
+      "atlasSize": [1536, 1872],
+      "assetErrorCount": 0,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/pets/jinbao.jpg"
+    },
+    {
+      "id": "xuetuan",
+      "displayName": "雪团",
+      "breed": "比熊",
+      "heading": "和雪团一起玩",
+      "selectedLabel": "选择宠物：雪团·比熊",
+      "atlas": "/pixel-dog/xuetuan/spritesheet.webp",
+      "atlasSize": [1536, 1872],
+      "assetErrorCount": 0,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/pets/xuetuan.jpg"
+    },
+    {
+      "id": "keke",
+      "displayName": "可可",
+      "breed": "棕色泰迪",
+      "heading": "和可可一起玩",
+      "selectedLabel": "选择宠物：可可·棕色泰迪",
+      "atlas": "/pixel-dog/keke/spritesheet.webp",
+      "atlasSize": [1536, 1872],
+      "assetErrorCount": 0,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/pets/keke.jpg"
+    },
+    {
+      "id": "jutuan",
+      "displayName": "橘团",
+      "breed": "橘色异国短毛猫",
+      "heading": "和橘团一起玩",
+      "selectedLabel": "选择宠物：橘团·橘色异国短毛猫",
+      "atlas": "/pixel-dog/jutuan/spritesheet.webp",
+      "atlasSize": [1536, 1872],
+      "assetErrorCount": 0,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/pets/jutuan.jpg"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "living-room",
+      "displayName": "客厅",
+      "background": "/pixel-dog/scenes/living-room.webp",
+      "backgroundSize": [1600, 900],
+      "announcement": "当前场景：客厅",
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/scenes/living-room.jpg"
+    },
+    {
+      "id": "garden",
+      "displayName": "花园",
+      "background": "/pixel-dog/scenes/garden.webp",
+      "backgroundSize": [1600, 900],
+      "announcement": "当前场景：花园",
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/scenes/garden.jpg"
+    },
+    {
+      "id": "beach",
+      "displayName": "海滩",
+      "background": "/pixel-dog/scenes/beach.webp",
+      "backgroundSize": [1600, 900],
+      "announcement": "当前场景：海滩",
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/scenes/beach.jpg"
+    },
+    {
+      "id": "snow-cabin",
+      "displayName": "雪地小屋",
+      "background": "/pixel-dog/scenes/snow-cabin.webp",
+      "backgroundSize": [1600, 900],
+      "announcement": "当前场景：雪地小屋",
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/scenes/snow-cabin.jpg"
+    },
+    {
+      "id": "camping",
+      "displayName": "星光露营",
+      "background": "/pixel-dog/scenes/camping.webp",
+      "backgroundSize": [1600, 900],
+      "announcement": "当前场景：星光露营",
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/scenes/camping.jpg"
+    },
+    {
+      "id": "rooftop",
+      "displayName": "屋顶",
+      "background": "/pixel-dog/scenes/rooftop.webp",
+      "backgroundSize": [1600, 900],
+      "announcement": "当前场景：屋顶",
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/scenes/rooftop.jpg"
+    }
+  ],
+  "newInteractions": [
+    {
+      "button": "玩球",
+      "state": "playing-ball",
+      "status": "雪团正在玩球",
+      "prop": "玩具球",
+      "visible": true,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/interactions/playing-ball.jpg"
+    },
+    {
+      "button": "梳毛",
+      "state": "grooming",
+      "status": "雪团正在梳毛",
+      "prop": "梳毛刷",
+      "visible": true,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/interactions/grooming.jpg"
+    },
+    {
+      "button": "洗澡",
+      "state": "bathing",
+      "status": "雪团正在洗澡",
+      "prop": "宠物浴盆",
+      "visible": true,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/interactions/bathing.jpg"
+    },
+    {
+      "button": "跳舞",
+      "state": "dancing",
+      "status": "雪团正在跳舞",
+      "prop": "跳舞节拍",
+      "visible": true,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/interactions/dancing.jpg"
+    },
+    {
+      "button": "拍照",
+      "state": "posing",
+      "status": "雪团正在摆姿势拍照",
+      "prop": "拍照闪光",
+      "visible": true,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/interactions/posing.jpg"
+    }
+  ],
+  "existingInteractions": {
+    "click": {
+      "state": "happy",
+      "status": "雪团很开心"
+    },
+    "longPress": {
+      "holdMs": 260,
+      "midGestureState": "petting",
+      "midGestureStatus": "雪团正在享受抚摸",
+      "afterReleaseState": "idle",
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/interactions/long-press-petting.jpg"
+    },
+    "jump": {
+      "state": "jumping",
+      "status": "雪团跳起来了"
+    },
+    "feed": {
+      "state": "feeding",
+      "status": "雪团正在吃饭",
+      "bowlVisible": true
+    },
+    "movement": {
+      "observedMidGestureState": "moving-left",
+      "observedMidGestureStatus": "雪团正在向左走",
+      "initialPosition": 50,
+      "leftEndpoint": 8,
+      "rightEndpoint": 92,
+      "afterReleaseState": "idle"
+    },
+    "inactivity": {
+      "wakeState": "idle",
+      "after12Seconds": {
+        "state": "waiting",
+        "status": "雪团在等你"
+      },
+      "after30Seconds": {
+        "state": "sleeping",
+        "status": "雪团睡着了"
+      },
+      "wakeAfterSleep": {
+        "state": "idle",
+        "status": "雪团正在呼吸和眨眼"
+      },
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/interactions/automatic-sleep.jpg"
+    }
+  },
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900,
+      "document": {"clientWidth": 1440, "scrollWidth": 1440, "noHorizontalOverflow": true},
+      "studio": {"clientWidth": 1440, "scrollWidth": 1440, "noHorizontalOverflow": true},
+      "room": {"clientWidth": 1080, "scrollWidth": 1080, "noHorizontalOverflow": true},
+      "scene": {"width": 1005.125, "height": 706, "contentWidth": 1003, "scrollWidth": 1003},
+      "selectorGroups": [
+        {"clientWidth": 261, "scrollWidth": 261, "noHorizontalOverflow": true},
+        {"clientWidth": 261, "scrollWidth": 261, "noHorizontalOverflow": true}
+      ],
+      "selectorStrips": [
+        {"clientWidth": 261, "scrollWidth": 442, "overflowX": "auto", "contained": true},
+        {"clientWidth": 261, "scrollWidth": 831, "overflowX": "auto", "contained": true}
+      ],
+      "minimumButton": {"width": 52, "height": 44},
+      "petInsideScene": true,
+      "statusInsideScene": true,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/desktop-baseline.jpg"
+    },
+    {
+      "name": "intermediate",
+      "width": 578,
+      "height": 863,
+      "document": {"clientWidth": 578, "scrollWidth": 578, "noHorizontalOverflow": true},
+      "studio": {"clientWidth": 578, "scrollWidth": 578, "noHorizontalOverflow": true},
+      "room": {"clientWidth": 578, "scrollWidth": 578, "noHorizontalOverflow": true},
+      "scene": {"width": 554, "height": 448.7578125, "contentWidth": 552, "scrollWidth": 552},
+      "selectorGroups": [
+        {"clientWidth": 550, "scrollWidth": 550, "noHorizontalOverflow": true},
+        {"clientWidth": 550, "scrollWidth": 550, "noHorizontalOverflow": true}
+      ],
+      "selectorStrips": [
+        {"clientWidth": 550, "scrollWidth": 550, "overflowX": "auto", "contained": true},
+        {"clientWidth": 550, "scrollWidth": 783, "overflowX": "auto", "contained": true}
+      ],
+      "minimumButton": {"width": 76, "height": 44},
+      "petInsideScene": true,
+      "statusInsideScene": true,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/mobile/intermediate-578x863.jpg"
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844,
+      "document": {"clientWidth": 390, "scrollWidth": 390, "noHorizontalOverflow": true},
+      "studio": {"clientWidth": 390, "scrollWidth": 390, "noHorizontalOverflow": true},
+      "room": {"clientWidth": 390, "scrollWidth": 390, "noHorizontalOverflow": true},
+      "scene": {"left": 12, "right": 378, "width": 366, "height": 438.875, "contentWidth": 364, "scrollWidth": 364},
+      "selectorGroups": [
+        {"clientWidth": 362, "scrollWidth": 362, "noHorizontalOverflow": true},
+        {"clientWidth": 362, "scrollWidth": 362, "noHorizontalOverflow": true}
+      ],
+      "selectorStrips": [
+        {"clientWidth": 362, "scrollWidth": 412, "overflowX": "auto", "contained": true},
+        {"clientWidth": 362, "scrollWidth": 783, "overflowX": "auto", "contained": true}
+      ],
+      "minimumButton": {"width": 76, "height": 44},
+      "petInsideScene": true,
+      "statusInsideScene": true,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/mobile/mobile-390x844.jpg"
+    }
+  ],
+  "mobileBoundaryChecks": {
+    "leftEndpointFeed": {
+      "position": 8,
+      "bowlSide": "right",
+      "sceneRect": {"left": 12, "right": 378, "top": 217.09375, "bottom": 655.96875},
+      "bowlRect": {"left": 204.4296875, "right": 278.4296875, "top": 593.96875, "bottom": 623.96875},
+      "insideScene": true,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/mobile/feed-left-8-viewport.jpg"
+    },
+    "rightEndpointFeed": {
+      "position": 92,
+      "bowlSide": "left",
+      "sceneRect": {"left": 12, "right": 378, "top": 217.09375, "bottom": 655.96875},
+      "bowlRect": {"left": 111.5625, "right": 185.5625, "top": 593.96875, "bottom": 623.96875},
+      "insideScene": true,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/mobile/feed-right-92-viewport.jpg"
+    },
+    "rightEndpointBallCycle": {
+      "position": 92,
+      "sampleCount": 17,
+      "minimumLeft": 292.2076721191406,
+      "maximumRight": 369.946533203125,
+      "sceneLeft": 12,
+      "sceneRight": 378,
+      "allSamplesInsideScene": true,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/mobile/playing-ball-right-92-viewport.jpg"
+    },
+    "snowCabinMask": {
+      "sceneRect": {"left": 12, "right": 378, "top": 501.09375, "bottom": 939.96875},
+      "snowRect": {"left": 13, "right": 165.875, "top": 502.09375, "bottom": 659.36675},
+      "snowConfinedToWindowArea": true,
+      "screenshot": "var/interactive-pixel-dog/browser-qa/multi-pet-scenes/mobile/snow-cabin-390x844-full.jpg"
+    }
+  },
+  "accessibility": {
+    "roleStatusCount": 1,
+    "sceneAnnouncementAriaLive": "polite",
+    "ambientLayerCount": 1,
+    "selectedCardContrast": {
+      "background": "rgb(31, 107, 87)",
+      "primaryText": "rgb(255, 250, 241)",
+      "secondaryText": "rgb(229, 242, 234)",
+      "primaryRatio": 6.1220498686710645,
+      "secondaryRatio": 5.523116254135105,
+      "wcagAANormalText": true
+    },
+    "focusOrder": {
+      "result": "PASS",
+      "focusableCount": 24,
+      "allTabIndexZero": true,
+      "allComputedCssOrderZero": true,
+      "sequence": [
+        "返回创建页",
+        "选择宠物：豆包·红柴犬",
+        "选择宠物：金宝·金毛",
+        "选择宠物：雪团·比熊",
+        "选择宠物：可可·棕色泰迪",
+        "选择宠物：橘团·橘色异国短毛猫",
+        "切换场景：客厅",
+        "切换场景：花园",
+        "切换场景：海滩",
+        "切换场景：雪地小屋",
+        "切换场景：星光露营",
+        "切换场景：屋顶",
+        "豆包的客厅",
+        "抚摸或点击豆包",
+        "向左移动",
+        "向右移动",
+        "跳跃",
+        "喂食",
+        "玩球",
+        "梳毛",
+        "洗澡",
+        "跳舞",
+        "拍照",
+        "叫醒豆包"
+      ],
+      "automationNote": "A supplemental Playwright browser session sent 24 real Tab presses after reload. The observed active-element sequence matched this list exactly. The in-app browser DOM audit independently confirmed all 24 native focusables use tabIndex 0 and computed CSS order 0."
+    }
+  },
+  "reducedMotion": {
+    "result": "PASS",
+    "primaryBrowserPreference": false,
+    "supplementalBrowserPreference": true,
+    "mediaRuleCount": 1,
+    "mediaQuery": "(prefers-reduced-motion: reduce)",
+    "ambientAnimationDisabledByRule": true,
+    "propAnimationDisabledByRule": true,
+    "propsRemainDisplayedByBaseRule": true,
+    "runtimeCheck": {
+      "surface": "supplemental Playwright browser session",
+      "interaction": "玩球",
+      "state": "playing-ball",
+      "status": "豆包正在玩球",
+      "propVisible": true,
+      "propAnimationName": "none",
+      "ambientBeforeAnimationName": "none",
+      "ambientAfterAnimationName": "none"
+    },
+    "normalAnimationNamesObserved": [
+      "pixel-ambient-snow",
+      "pixel-ambient-fire",
+      "pixel-prop-ball"
+    ],
+    "toolingNote": "The Codex in-app browser supplied the primary visual QA. Because it has no media-preference override, a supplemental Playwright session enabled reducedMotion=reduce and performed the runtime interaction check above."
+  },
+  "requestsAndConsole": {
+    "localAssetRouteCount": 21,
+    "localAssetRoutesHttp200": 21,
+    "failedImageCount": 0,
+    "consoleWarningCount": 0,
+    "consoleErrorCount": 0,
+    "pageAssetInventory": {
+      "totalCount": 29,
+      "imageCount": 12,
+      "stylesheetCount": 1,
+      "scriptCount": 16
+    }
+  },
+  "visualReview": {
+    "result": "PASS",
+    "checks": {
+      "fivePetsRemainDistinct": true,
+      "sixBackgroundsAreDistinct": true,
+      "whiteFurReadableOnLightAndDarkScenes": true,
+      "backgroundsDoNotOverpowerPet": true,
+      "propsAreNotClipped": true,
+      "snowDoesNotFallAcrossCabinFloorOrFireplace": true,
+      "selectedCardsRemainReadable": true
+    }
+  },
+  "finalCommands": [
+    {
+      "command": "pnpm --dir apps/web test",
+      "result": "PASS",
+      "summary": "23 files, 94 tests"
+    },
+    {
+      "command": "pnpm --dir apps/web typecheck",
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --dir apps/web build",
+      "result": "PASS",
+      "summary": "46 modules transformed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS"
+    },
+    {
+      "command": "git status --short",
+      "result": "PASS",
+      "summary": "Only the two intended documentation deliverables are modified or untracked; generated Playwright session files were moved out of the worktree."
+    },
+    {
+      "command": "git log -1 --oneline",
+      "result": "PASS",
+      "summary": "29b598f test: lock pixel pet spritesheet filename"
+    }
+  ]
+}
