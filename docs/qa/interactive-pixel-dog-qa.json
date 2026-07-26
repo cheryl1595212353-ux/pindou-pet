@@ -1,0 +1,63 @@
+{
+  "petId": "doubao",
+  "checkedAt": "2026-07-27",
+  "source": {
+    "path": "apps/web/public/pixel-dog/doubao/real-reference.png",
+    "sha256": "cee03b31f661eeefa1e5aeca809f27f2246447cc1a603ba01010d1a2eac718ad"
+  },
+  "baseSprite": {
+    "path": "apps/web/public/pixel-dog/doubao/base.png",
+    "sha256": "4f33e30a30bfdeecb73746ba64b4c9e68a7193202c13ff10337084f1198e8b84",
+    "dimensions": [128, 128],
+    "visibleColors": 32,
+    "alphaValues": [0, 255],
+    "visibleBoundingBox": [20, 4, 107, 124]
+  },
+  "atlas": {
+    "path": "apps/web/public/pixel-dog/doubao/spritesheet.webp",
+    "sha256": "5cdb0d4165343ba3092be2a3caaf86dc89631e4cdb7c7c33b1c578a13d25a29d",
+    "dimensions": [1536, 1872],
+    "grid": [8, 9],
+    "cell": [192, 208],
+    "frameCount": 57,
+    "transparentRgbResiduePixels": 0,
+    "structuralValidation": "pass",
+    "frameInspectionWarnings": []
+  },
+  "states": {
+    "idle": 6,
+    "moving-right": 8,
+    "moving-left": 8,
+    "happy": 4,
+    "jumping": 5,
+    "sleeping": 8,
+    "waiting": 6,
+    "feeding": 6,
+    "petting": 6
+  },
+  "visualQa": {
+    "result": "pass",
+    "reviewed": [
+      "contact sheet",
+      "nine animation previews",
+      "frame inspection report",
+      "atlas validation report"
+    ],
+    "notes": "Identity, direction, action semantics, transparency and frame completeness passed. Sleeping has no crying effects; feeding is an in-place head-down response; petting reads as a relaxed happy response."
+  },
+  "inAppBrowserQa": {
+    "result": "pass",
+    "url": "http://127.0.0.1:5173/",
+    "viewport": [578, 863],
+    "horizontalOverflow": false,
+    "loadedAtlasDimensions": [1536, 1872],
+    "consoleWarningsOrErrors": 0,
+    "verifiedInteractions": [
+      "click dog -> happy",
+      "jump button -> jumping",
+      "feed button -> feeding with bowl",
+      "inactivity -> sleeping",
+      "wake button -> idle"
+    ]
+  }
+}

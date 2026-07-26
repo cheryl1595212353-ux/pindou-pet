@@ -7,7 +7,7 @@ import {
   type RouteObject,
 } from "react-router-dom";
 
-import { PixelPetStudio } from "./PixelPetStudio";
+import { PixelDogStudio } from "./pixel-dog/PixelDogStudio";
 
 const DESKTOP_EDITOR_MIN_WIDTH = 1280;
 
@@ -21,7 +21,7 @@ function ProductFrame() {
           </span>
           拼豆宠物
         </Link>
-        <span className="phase-label">可用体验版 · LOCAL</span>
+        <span className="phase-label">2D 互动版 · LOCAL</span>
       </header>
       <main className="page-shell">
         <Outlet />
@@ -46,7 +46,7 @@ function PlaceholderPage({ eyebrow, title, description }: PageCopy) {
 }
 
 function HomePage() {
-  return <PixelPetStudio />;
+  return <PixelDogStudio />;
 }
 
 function useDesktopEditorAllowed(): boolean {

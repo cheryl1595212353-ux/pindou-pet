@@ -1,0 +1,69 @@
+import { describe, expect, it } from "vitest";
+
+import petManifest from "../../../public/pixel-dog/doubao/pet.json";
+import {
+  ATLAS_HEIGHT,
+  ATLAS_WIDTH,
+  CELL_HEIGHT,
+  CELL_WIDTH,
+  DOG_CLIPS,
+  SLEEPING_AFTER_MS,
+  WAITING_AFTER_MS,
+  clampStagePosition,
+  dogReducer,
+} from "./pixelDogModel";
+
+describe("pixel dog model", () => {
+  it("maps every product state onto the fixed nine-row pet atlas", () => {
+    expect(Object.values(DOG_CLIPS).map((clip) => clip.row)).toEqual([
+      0, 1, 2, 3, 4, 5, 6, 7, 8,
+    ]);
+    expect(Object.values(DOG_CLIPS).map((clip) => clip.frameCount)).toEqual([
+      6, 8, 8, 4, 5, 8, 6, 6, 6,
+    ]);
+    expect([CELL_WIDTH, CELL_HEIGHT, ATLAS_WIDTH, ATLAS_HEIGHT]).toEqual([
+      192, 208, 1536, 1872,
+    ]);
+    expect(Object.keys(petManifest.states)).toEqual(Object.keys(DOG_CLIPS));
+    expect(Object.values(petManifest.states).map((clip) => clip.row)).toEqual(
+      Object.values(DOG_CLIPS).map((clip) => clip.row),
+    );
+  });
+
+  it("keeps the approved waiting and sleeping thresholds distinct", () => {
+    expect(WAITING_AFTER_MS).toBe(12_000);
+    expect(SLEEPING_AFTER_MS).toBe(30_000);
+    expect(SLEEPING_AFTER_MS).toBeGreaterThan(WAITING_AFTER_MS);
+  });
+
+  it("moves, stops, and completes one-shot interactions", () => {
+    expect(dogReducer("idle", { type: "move", direction: "left" })).toBe("moving-left");
+    expect(dogReducer("moving-left", { type: "stop" })).toBe("idle");
+    expect(dogReducer("idle", { type: "happy" })).toBe("happy");
+    expect(dogReducer("happy", { type: "complete" })).toBe("idle");
+    expect(dogReducer("idle", { type: "jump" })).toBe("jumping");
+    expect(dogReducer("jumping", { type: "complete" })).toBe("idle");
+    expect(dogReducer("idle", { type: "feed" })).toBe("feeding");
+    expect(dogReducer("feeding", { type: "complete" })).toBe("idle");
+  });
+
+  it("supports petting, inactivity, sleep, and wake-up", () => {
+    expect(dogReducer("idle", { type: "pet-start" })).toBe("petting");
+    expect(dogReducer("petting", { type: "pet-end" })).toBe("idle");
+    expect(dogReducer("idle", { type: "wait" })).toBe("waiting");
+    expect(dogReducer("waiting", { type: "sleep" })).toBe("sleeping");
+    expect(dogReducer("sleeping", { type: "wake" })).toBe("idle");
+  });
+
+  it("does not interrupt an active interaction with an inactivity event", () => {
+    expect(dogReducer("moving-right", { type: "wait" })).toBe("moving-right");
+    expect(dogReducer("petting", { type: "sleep" })).toBe("petting");
+    expect(dogReducer("jumping", { type: "sleep" })).toBe("jumping");
+  });
+
+  it("clamps horizontal movement inside the playroom", () => {
+    expect(clampStagePosition(-100)).toBe(8);
+    expect(clampStagePosition(50)).toBe(50);
+    expect(clampStagePosition(200)).toBe(92);
+  });
+});
