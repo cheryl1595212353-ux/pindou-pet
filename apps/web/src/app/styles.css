@@ -252,7 +252,7 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 .pixel-dog-scene-selector button[aria-pressed="true"] {
   color: #fffaf1;
   border-color: #251f1a;
-  background: #2b8e73;
+  background: #1f6b57;
   box-shadow: 1px 1px 0 #251f1a;
   transform: translate(2px, 2px);
 }
@@ -571,7 +571,10 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 }
 
 .pixel-dog-room[data-scene="snow-cabin"] .pixel-dog-ambient::before {
-  inset: -20% 0 0;
+  top: 0;
+  left: 6%;
+  width: 38%;
+  height: 36%;
   background-image:
     radial-gradient(circle, rgb(255 255 255 / 82%) 0 2px, transparent 3px),
     radial-gradient(circle, rgb(255 255 255 / 55%) 0 1px, transparent 2px);
@@ -985,8 +988,8 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 }
 
 @keyframes pixel-ambient-snow {
-  from { transform: translateY(-54px); }
-  to { transform: translateY(54px); }
+  from { background-position: 0 -54px, 22px -20px; }
+  to { background-position: 0 0, 22px 18px; }
 }
 
 @keyframes pixel-ambient-fire {
@@ -1076,6 +1079,13 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
     gap: 10px;
   }
   .pixel-dog-scene { --dog-scale: 1.12; min-height: 320px; }
+  .pixel-dog-room[data-scene="snow-cabin"] .pixel-dog-ambient::before {
+    left: 0;
+    width: 42%;
+  }
+  .pixel-dog-prop--ball {
+    left: min(var(--dog-left, 50%), calc(100% - 136px));
+  }
   .pixel-dog-state {
     bottom: calc(42px + 208px * var(--dog-scale, 1.12));
     max-width: 190px;
