@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import petManifest from "../../../public/pixel-dog/doubao/pet.json";
+import { PETS } from "./petCatalog";
 import {
   ATLAS_HEIGHT,
   ATLAS_WIDTH,
@@ -70,10 +71,12 @@ describe("pixel dog model", () => {
     expect(DOG_CLIPS.posing.row).toBe(3);
   });
 
-  it("keeps name-free statuses while preserving the current UI labels", () => {
+  it("keeps name-free statuses without the retired label field", () => {
     for (const clip of Object.values(DOG_CLIPS)) {
-      expect(clip.status).not.toContain("豆包");
-      expect(clip.label).toBe(`豆包${clip.status}`);
+      for (const pet of PETS) {
+        expect(clip.status).not.toContain(pet.displayName);
+      }
+      expect(Object.hasOwn(clip, "label")).toBe(false);
     }
   });
 

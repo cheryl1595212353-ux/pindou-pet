@@ -2,7 +2,6 @@ export const CELL_WIDTH = 192;
 export const CELL_HEIGHT = 208;
 export const ATLAS_WIDTH = CELL_WIDTH * 8;
 export const ATLAS_HEIGHT = CELL_HEIGHT * 9;
-export const SPRITESHEET_PATH = "/pixel-dog/doubao/spritesheet.webp";
 
 export const WAITING_AFTER_MS = 12_000;
 export const SLEEPING_AFTER_MS = 30_000;
@@ -31,115 +30,107 @@ export interface DogClip {
   readonly durations: readonly number[];
   readonly loop: boolean;
   readonly status: string;
-  /** @deprecated Use the name-free status field for new UI. */
-  readonly label: string;
-}
-
-type DogClipDefinition = Omit<DogClip, "label">;
-
-function defineClip(clip: DogClipDefinition): DogClip {
-  return { ...clip, label: `豆包${clip.status}` };
 }
 
 export const DOG_CLIPS: Readonly<Record<PixelDogState, DogClip>> = {
-  idle: defineClip({
+  idle: {
     row: 0,
     frameCount: 6,
     durations: [280, 110, 110, 140, 140, 320],
     loop: true,
     status: "正在呼吸和眨眼",
-  }),
-  "moving-right": defineClip({
+  },
+  "moving-right": {
     row: 1,
     frameCount: 8,
     durations: [120, 120, 120, 120, 120, 120, 120, 220],
     loop: true,
     status: "正在向右走",
-  }),
-  "moving-left": defineClip({
+  },
+  "moving-left": {
     row: 2,
     frameCount: 8,
     durations: [120, 120, 120, 120, 120, 120, 120, 220],
     loop: true,
     status: "正在向左走",
-  }),
-  happy: defineClip({
+  },
+  happy: {
     row: 3,
     frameCount: 4,
     durations: [140, 140, 140, 280],
     loop: false,
     status: "很开心",
-  }),
-  jumping: defineClip({
+  },
+  jumping: {
     row: 4,
     frameCount: 5,
     durations: [140, 140, 140, 140, 280],
     loop: false,
     status: "跳起来了",
-  }),
-  sleeping: defineClip({
+  },
+  sleeping: {
     row: 5,
     frameCount: 8,
     durations: [140, 140, 140, 140, 140, 140, 140, 240],
     loop: true,
     status: "睡着了",
-  }),
-  waiting: defineClip({
+  },
+  waiting: {
     row: 6,
     frameCount: 6,
     durations: [150, 150, 150, 150, 150, 260],
     loop: true,
     status: "在等你",
-  }),
-  feeding: defineClip({
+  },
+  feeding: {
     row: 7,
     frameCount: 6,
     durations: [120, 120, 120, 120, 120, 220],
     loop: false,
     status: "正在吃饭",
-  }),
-  petting: defineClip({
+  },
+  petting: {
     row: 8,
     frameCount: 6,
     durations: [150, 150, 150, 150, 150, 280],
     loop: true,
     status: "正在享受抚摸",
-  }),
-  "playing-ball": defineClip({
+  },
+  "playing-ball": {
     row: 4,
     frameCount: 5,
     durations: [140, 140, 140, 140, 280],
     loop: false,
     status: "正在玩球",
-  }),
-  grooming: defineClip({
+  },
+  grooming: {
     row: 8,
     frameCount: 6,
     durations: [150, 150, 150, 150, 150, 280],
     loop: false,
     status: "正在梳毛",
-  }),
-  bathing: defineClip({
+  },
+  bathing: {
     row: 6,
     frameCount: 6,
     durations: [150, 150, 150, 150, 150, 260],
     loop: false,
     status: "正在洗澡",
-  }),
-  dancing: defineClip({
+  },
+  dancing: {
     row: 3,
     frameCount: 4,
     durations: [140, 140, 140, 280],
     loop: false,
     status: "正在跳舞",
-  }),
-  posing: defineClip({
+  },
+  posing: {
     row: 3,
     frameCount: 4,
     durations: [140, 140, 140, 280],
     loop: false,
     status: "正在摆姿势拍照",
-  }),
+  },
 };
 
 export type DogEvent =

@@ -16,13 +16,24 @@ import {
   CELL_WIDTH,
   DOG_CLIPS,
   SLEEPING_AFTER_MS,
-  SPRITESHEET_PATH,
   WAITING_AFTER_MS,
   clampStagePosition,
   dogReducer,
   type DogEvent,
   type PixelDogState,
 } from "./pixelDogModel";
+import {
+  DEFAULT_PET_ID,
+  PETS,
+  getPetById,
+  type PetId,
+} from "./petCatalog";
+import {
+  DEFAULT_SCENE_ID,
+  SCENES,
+  getSceneById,
+  type SceneId,
+} from "./sceneCatalog";
 
 const MOVE_STEP = 1.25;
 const MOVE_INTERVAL_MS = 45;
@@ -91,6 +102,8 @@ function useSpriteFrame(
 
 export function PixelDogStudio() {
   const [state, dispatch] = useReducer(dogReducer, "idle");
+  const [petId, setPetId] = useState<PetId>(DEFAULT_PET_ID);
+  const [sceneId, setSceneId] = useState<SceneId>(DEFAULT_SCENE_ID);
   const [stagePosition, setStagePosition] = useState(50);
   const [activityVersion, setActivityVersion] = useState(0);
   const [assetFailed, setAssetFailed] = useState(false);
@@ -103,6 +116,8 @@ export function PixelDogStudio() {
   const completeClip = useCallback(() => dispatch({ type: "complete" }), []);
   const frame = useSpriteFrame(state, reducedMotion, completeClip);
   const clip = DOG_CLIPS[state];
+  const pet = getPetById(petId);
+  const scene = getSceneById(sceneId);
 
   const interact = useCallback((event: DogEvent) => {
     setActivityVersion((version) => version + 1);
@@ -113,6 +128,17 @@ export function PixelDogStudio() {
     setActivityVersion((version) => version + 1);
     dispatch({ type: "wake" });
   }, []);
+
+  const selectPet = (nextPetId: PetId) => {
+    setPetId(nextPetId);
+    setAssetFailed(false);
+    interact({ type: "wake" });
+  };
+
+  const selectScene = (nextSceneId: SceneId) => {
+    setSceneId(nextSceneId);
+    interact({ type: "wake" });
+  };
 
   useEffect(() => {
     const waitingTimer = window.setTimeout(
@@ -213,38 +239,78 @@ export function PixelDogStudio() {
   };
 
   const spriteStyle: CSSProperties = {
-    backgroundImage: `url("${SPRITESHEET_PATH}")`,
+    backgroundImage: `url("${pet.spritesheetPath}")`,
     backgroundPosition: `${-frame * CELL_WIDTH}px ${-clip.row * CELL_HEIGHT}px`,
     backgroundSize: `${ATLAS_WIDTH}px ${ATLAS_HEIGHT}px`,
   };
-  const positionStyle = {
-    "--dog-position": `${stagePosition}%`,
+  const sceneStyle = {
+    "--dog-ratio": (stagePosition / 100).toFixed(4),
+    "--scene-background": `url("${scene.backgroundPath}")`,
   } as CSSProperties;
 
   return (
     <section className="pixel-dog-studio" aria-label="2D 互动像素宠物">
       <aside className="pixel-dog-intro">
-        <p className="eyebrow">PIXEL PET · DOUBAO</p>
-        <h1>和豆包<br />一起玩</h1>
+        <p className="eyebrow">PIXEL PET · {pet.id.toUpperCase()}</p>
+        <h1>和{pet.displayName}<br />一起玩</h1>
         <p>
           点击它打招呼，长按轻轻抚摸；用方向键带它散步，或者等它自己慢慢睡着。
         </p>
 
         <dl className="pixel-dog-facts">
-          <div><dt>形象</dt><dd>红柴犬 · 32 色像素</dd></div>
+          <div><dt>形象</dt><dd>{pet.breed} · 32 色像素</dd></div>
           <div><dt>状态</dt><dd>9 组互动动画</dd></div>
           <div><dt>输入</dt><dd>点击 · 长按 · 方向键</dd></div>
         </dl>
 
-        <div className="pixel-dog-state" aria-live="polite" role="status">
-          <span aria-hidden="true" />
-          {clip.label}
+        <div className="pixel-dog-selector-group" aria-label="选择宠物">
+          <p>选择宠物</p>
+          <div className="pixel-dog-pet-selector">
+            {PETS.map((petOption) => (
+              <button
+                aria-label={`选择宠物：${petOption.displayName}·${petOption.breed}`}
+                aria-pressed={petOption.id === petId}
+                key={petOption.id}
+                onClick={() => selectPet(petOption.id)}
+                type="button"
+              >
+                <img alt="" src={petOption.basePath} />
+                <strong>{petOption.displayName}</strong>
+                <small>{petOption.breed}</small>
+              </button>
+            ))}
+          </div>
         </div>
+
+        <div className="pixel-dog-selector-group" aria-label="选择场景">
+          <p>选择场景</p>
+          <div className="pixel-dog-scene-selector">
+            {SCENES.map((sceneOption) => (
+              <button
+                aria-label={`切换场景：${sceneOption.displayName}`}
+                aria-pressed={sceneOption.id === sceneId}
+                key={sceneOption.id}
+                onClick={() => selectScene(sceneOption.id)}
+                type="button"
+              >
+                <img alt="" src={sceneOption.backgroundPath} />
+                <strong>{sceneOption.displayName}</strong>
+                <small>{sceneOption.description}</small>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <p className="pixel-dog-tips">
+          <kbd>←</kbd> <kbd>→</kbd> 带{pet.displayName}散步，点击它打招呼，长按可以抚摸它。
+        </p>
       </aside>
 
       <div
-        aria-label="豆包的互动房间"
+        aria-label={`${pet.displayName}的${scene.displayName}`}
         className="pixel-dog-room"
+        data-pet={pet.id}
+        data-scene={scene.id}
         data-state={state}
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
@@ -253,46 +319,61 @@ export function PixelDogStudio() {
         tabIndex={0}
       >
         <div className="pixel-dog-room-bar" aria-hidden="true">
-          <span>DOUBAO’S ROOM</span>
+          <span>{pet.id.toUpperCase()}’S ROOM</span>
           <span>{Math.round(stagePosition)} / 100</span>
         </div>
 
-        <div className="pixel-dog-scene">
+        <div className="pixel-dog-scene" style={sceneStyle}>
+          <div className="pixel-dog-sunpatch" aria-hidden="true" />
           <div className="pixel-dog-window" aria-hidden="true">
             <span />
             <span />
+          </div>
+          <div className="pixel-dog-frames" aria-hidden="true">
+            <i />
+            <i />
           </div>
           <div className="pixel-dog-shelf" aria-hidden="true">
             <i />
             <i />
             <i />
           </div>
+          <div className="pixel-dog-plant" aria-hidden="true" />
+          <div className="pixel-dog-rug" aria-hidden="true" />
+
+          <div
+            aria-live="polite"
+            className="pixel-dog-state"
+            role="status"
+          >
+            <span aria-hidden="true" />
+            {pet.displayName}{clip.status}
+          </div>
 
           {state === "feeding" && (
             <div
-              aria-label="豆包的食盆"
+              aria-label={`${pet.displayName}的食盆`}
               className="pixel-dog-bowl"
               role="img"
-              style={positionStyle}
             >
               <span aria-hidden="true">•••</span>
             </div>
           )}
 
-          <div className="pixel-dog-positioner" style={positionStyle}>
+          <div className="pixel-dog-positioner">
             <img
               alt=""
               className="pixel-dog-asset-probe"
               onError={() => setAssetFailed(true)}
-              src={SPRITESHEET_PATH}
+              src={pet.spritesheetPath}
             />
             {assetFailed ? (
               <p className="pixel-dog-asset-error" role="alert">
-                豆包的动画图集没有加载成功。
+                {pet.displayName}的动画图集没有加载成功。
               </p>
             ) : (
               <button
-                aria-label="抚摸或点击豆包"
+                aria-label={`抚摸或点击${pet.displayName}`}
                 className="pixel-dog-sprite"
                 data-frame={frame}
                 data-state={state}
@@ -308,7 +389,7 @@ export function PixelDogStudio() {
           </div>
         </div>
 
-        <div className="pixel-dog-controls" aria-label="豆包互动操作">
+        <div className="pixel-dog-controls" aria-label={`${pet.displayName}互动操作`}>
           <div className="pixel-dog-move-controls">
             <button
               aria-label="向左移动"
@@ -329,15 +410,17 @@ export function PixelDogStudio() {
               →
             </button>
           </div>
-          <button onClick={() => interact({ type: "jump" })} type="button">
-            跳跃
-          </button>
-          <button onClick={() => interact({ type: "feed" })} type="button">
-            喂食
-          </button>
-          <button onClick={() => interact({ type: "wake" })} type="button">
-            叫醒豆包
-          </button>
+          <div className="pixel-dog-action-controls">
+            <button onClick={() => interact({ type: "jump" })} type="button">
+              跳跃
+            </button>
+            <button onClick={() => interact({ type: "feed" })} type="button">
+              喂食
+            </button>
+            <button onClick={() => interact({ type: "wake" })} type="button">
+              叫醒{pet.displayName}
+            </button>
+          </div>
         </div>
       </div>
     </section>

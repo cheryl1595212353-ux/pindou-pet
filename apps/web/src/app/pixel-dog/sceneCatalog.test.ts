@@ -10,4 +10,10 @@ describe("scene catalog", () => {
     expect(new Set(SCENES.map((scene) => scene.id)).size).toBe(6);
     expect(SCENES.every((scene) => scene.backgroundPath.endsWith(".webp"))).toBe(true);
   });
+
+  it("uses the approved starlight camping display name", () => {
+    expect(SCENES.find((scene) => scene.id === "camping")?.displayName).toBe(
+      "星光露营",
+    );
+  });
 });

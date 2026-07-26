@@ -31,7 +31,7 @@ export const SCENES: readonly SceneProfile[] = [
   createScene("garden", "花园", "阳光明媚的花园。"),
   createScene("beach", "海滩", "轻松惬意的海边。"),
   createScene("snow-cabin", "雪地小屋", "雪景环绕的温暖小屋。"),
-  createScene("camping", "露营地", "星空下的露营地。"),
+  createScene("camping", "星光露营", "星空下的露营地。"),
   createScene("rooftop", "屋顶", "俯瞰城市的屋顶空间。"),
 ];
 

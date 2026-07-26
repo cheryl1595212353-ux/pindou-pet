@@ -20,7 +20,7 @@ describe("product shell", () => {
     render(<App initialPath="/" />);
 
     expect(screen.getByRole("heading", { name: "和豆包一起玩" })).toBeVisible();
-    expect(screen.getByRole("region", { name: "豆包的互动房间" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "豆包的客厅" })).toBeVisible();
     expect(screen.getByRole("button", { name: "抚摸或点击豆包" })).toHaveAttribute(
       "data-state",
       "idle",
