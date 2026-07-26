@@ -115,6 +115,28 @@ describe("PixelDogStudio", () => {
     expect(screen.getByRole("button", { name: "抚摸或点击雪团" })).toBeVisible();
   });
 
+  it("renders exactly one matching prop for each rich interaction", () => {
+    render(<PixelDogStudio />);
+    fireEvent.click(screen.getByRole("button", { name: "选择宠物：雪团·比熊" }));
+
+    [
+      ["玩球", "正在玩球", "玩具球", "ball"],
+      ["梳毛", "正在梳毛", "梳毛刷", "brush"],
+      ["洗澡", "正在洗澡", "宠物浴盆", "bath"],
+      ["跳舞", "正在跳舞", "跳舞节拍", "dance"],
+      ["拍照", "正在摆姿势拍照", "拍照闪光", "camera"],
+    ].forEach(([buttonName, status, propLabel, propClass]) => {
+      fireEvent.click(screen.getByRole("button", { name: buttonName }));
+
+      expect(screen.getByRole("status")).toHaveTextContent(`雪团${status}`);
+      expect(screen.getByRole("img", { name: propLabel })).toHaveClass(
+        "pixel-dog-prop",
+        `pixel-dog-prop--${propClass}`,
+      );
+      expect(screen.getAllByRole("img")).toHaveLength(1);
+    });
+  });
+
   it("reacts to clicks, petting, feeding, and jumping", () => {
     render(<PixelDogStudio />);
     const dog = screen.getByRole("button", { name: "抚摸或点击豆包" });
@@ -135,6 +157,30 @@ describe("PixelDogStudio", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "跳跃" }));
     expect(screen.getByRole("status")).toHaveTextContent("豆包跳起来了");
+  });
+
+  it("places the food bowl on the safe side of the stage", () => {
+    render(<PixelDogStudio />);
+
+    fireEvent.click(screen.getByRole("button", { name: "喂食" }));
+    expect(screen.getByRole("img", { name: "豆包的食盆" })).toHaveAttribute(
+      "data-side",
+      "right",
+    );
+
+    const moveRight = screen.getByRole("button", { name: "向右移动" });
+    fireEvent.pointerDown(moveRight);
+    act(() => {
+      vi.advanceTimersByTime(45 * 34);
+    });
+    fireEvent.pointerUp(moveRight);
+    expect(screen.getByText("92 / 100")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "喂食" }));
+    expect(screen.getByRole("img", { name: "豆包的食盆" })).toHaveAttribute(
+      "data-side",
+      "left",
+    );
   });
 
   it("moves with focused keyboard controls and stops on key release", () => {

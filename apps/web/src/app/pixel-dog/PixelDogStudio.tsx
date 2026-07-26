@@ -19,6 +19,7 @@ import {
   WAITING_AFTER_MS,
   clampStagePosition,
   dogReducer,
+  getPropSide,
   type DogEvent,
   type PixelDogState,
 } from "./pixelDogModel";
@@ -39,6 +40,15 @@ const MOVE_STEP = 1.25;
 const MOVE_INTERVAL_MS = 45;
 const PETTING_DELAY_MS = 240;
 const PETTING_DRAG_THRESHOLD = 7;
+const INTERACTION_PROPS: Partial<
+  Record<PixelDogState, { readonly label: string; readonly modifier: string }>
+> = {
+  "playing-ball": { label: "玩具球", modifier: "ball" },
+  grooming: { label: "梳毛刷", modifier: "brush" },
+  bathing: { label: "宠物浴盆", modifier: "bath" },
+  dancing: { label: "跳舞节拍", modifier: "dance" },
+  posing: { label: "拍照闪光", modifier: "camera" },
+};
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
@@ -118,6 +128,8 @@ export function PixelDogStudio() {
   const clip = DOG_CLIPS[state];
   const pet = getPetById(petId);
   const scene = getSceneById(sceneId);
+  const interactionProp = INTERACTION_PROPS[state];
+  const propSide = getPropSide(stagePosition);
 
   const interact = useCallback((event: DogEvent) => {
     setActivityVersion((version) => version + 1);
@@ -354,10 +366,21 @@ export function PixelDogStudio() {
             {pet.displayName}{clip.status}
           </div>
 
+          {interactionProp && (
+            <div
+              aria-label={interactionProp.label}
+              className={`pixel-dog-prop pixel-dog-prop--${interactionProp.modifier}`}
+              role="img"
+            >
+              <span aria-hidden="true" />
+            </div>
+          )}
+
           {state === "feeding" && (
             <div
               aria-label={`${pet.displayName}的食盆`}
               className="pixel-dog-bowl"
+              data-side={propSide}
               role="img"
             >
               <span aria-hidden="true">•••</span>
@@ -420,6 +443,21 @@ export function PixelDogStudio() {
             </button>
             <button onClick={() => interact({ type: "feed" })} type="button">
               喂食
+            </button>
+            <button onClick={() => interact({ type: "play-ball" })} type="button">
+              玩球
+            </button>
+            <button onClick={() => interact({ type: "groom" })} type="button">
+              梳毛
+            </button>
+            <button onClick={() => interact({ type: "bathe" })} type="button">
+              洗澡
+            </button>
+            <button onClick={() => interact({ type: "dance" })} type="button">
+              跳舞
+            </button>
+            <button onClick={() => interact({ type: "pose" })} type="button">
+              拍照
             </button>
             <button onClick={() => interact({ type: "wake" })} type="button">
               叫醒{pet.displayName}
