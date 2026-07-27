@@ -341,22 +341,6 @@ export function PixelDogStudio() {
 
         <div className="pixel-dog-scene" style={sceneStyle}>
           <div aria-hidden="true" className="pixel-dog-ambient" />
-          <div className="pixel-dog-sunpatch" aria-hidden="true" />
-          <div className="pixel-dog-window" aria-hidden="true">
-            <span />
-            <span />
-          </div>
-          <div className="pixel-dog-frames" aria-hidden="true">
-            <i />
-            <i />
-          </div>
-          <div className="pixel-dog-shelf" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </div>
-          <div className="pixel-dog-plant" aria-hidden="true" />
-          <div className="pixel-dog-rug" aria-hidden="true" />
 
           <div
             aria-live="polite"

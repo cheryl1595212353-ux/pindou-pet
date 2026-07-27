@@ -105,64 +105,89 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 
 @keyframes heart-float { 0% { opacity: 0; transform: translateY(12px) scale(.5) rotate(-8deg); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-75px) scale(1.2) rotate(9deg); } }
 
+/* ================= 2D 互动像素宠物 ================= */
+
 .pixel-dog-studio {
   display: grid;
   width: 100%;
   min-height: calc(100svh - 66px);
   overflow-x: clip;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-  background: #f8f1e6;
+  background-color: #e9ddc8;
+  background-image:
+    linear-gradient(45deg, #ded0b6 25%, transparent 25%),
+    linear-gradient(-45deg, #ded0b6 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ded0b6 75%),
+    linear-gradient(-45deg, transparent 75%, #ded0b6 75%);
+  background-position: 0 0, 0 11px, 11px -11px, -11px 0;
+  background-size: 22px 22px;
+  grid-template-columns: minmax(272px, 336px) minmax(0, 1fr);
+  grid-template-rows: minmax(calc(100svh - 66px), auto);
 }
 
 .pixel-dog-intro {
   display: flex;
   min-width: 0;
   max-height: calc(100svh - 66px);
-  padding: clamp(30px, 5vh, 64px) clamp(24px, 3.4vw, 50px);
+  padding: clamp(26px, 4.5vh, 52px) clamp(20px, 2.4vw, 36px);
   overflow-y: auto;
   border-right: 1px solid #251f1a;
+  background: #f8f1e6;
   flex-direction: column;
   justify-content: flex-start;
 }
 
-.pixel-dog-intro h1 { max-width: 7ch; }
+.pixel-dog-intro h1 { max-width: 9ch; font-size: clamp(36px, 3.4vw, 50px); }
 .pixel-dog-intro > p:not(.eyebrow) {
-  max-width: 28rem;
-  margin: 20px 0 0;
+  max-width: 26rem;
+  margin: 16px 0 0;
   color: #655b51;
-  font-size: 15px;
-  line-height: 1.72;
+  font-size: 14px;
+  line-height: 1.7;
 }
 
 .pixel-dog-facts {
-  margin: 26px 0 0;
-  border-top: 1px solid rgb(37 31 26 / 22%);
+  display: flex;
+  margin: 18px 0 0;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .pixel-dog-facts div {
-  display: grid;
-  padding: 11px 0;
-  border-bottom: 1px solid rgb(37 31 26 / 16%);
-  grid-template-columns: 64px 1fr;
-  gap: 12px;
+  display: flex;
+  padding: 5px 8px;
+  align-items: baseline;
+  border: 1px solid rgb(37 31 26 / 25%);
+  background: #f1e7d6;
+  gap: 6px;
   font-size: 11px;
 }
 
-.pixel-dog-facts dt { color: #938577; }
+.pixel-dog-facts dt { color: #938577; font-size: 9px; }
 .pixel-dog-facts dd { margin: 0; font-weight: 800; }
 
 .pixel-dog-selector-group {
   min-width: 0;
-  margin-top: 16px;
+  margin-top: 18px;
 }
 
 .pixel-dog-selector-group > p:first-child {
-  margin: 0 0 7px;
+  display: flex;
+  margin: 0 0 8px;
+  align-items: center;
   color: #75695e;
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 10px;
   font-weight: 850;
+  gap: 7px;
   letter-spacing: .08em;
+}
+
+.pixel-dog-selector-group > p:first-child::before {
+  width: 8px;
+  height: 8px;
+  background: #c84831;
+  content: "";
+  flex: none;
 }
 
 .pixel-dog-pet-selector,
@@ -170,18 +195,21 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   display: flex;
   min-width: 0;
   max-width: 100%;
-  padding: 2px 2px 8px;
+  padding: 2px 2px 9px;
   overflow-x: auto;
   overflow-y: hidden;
-  gap: 7px;
+  gap: 8px;
   overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
   scrollbar-color: #8e8175 transparent;
   scrollbar-width: thin;
 }
 
 .pixel-dog-pet-selector button,
 .pixel-dog-scene-selector button {
+  position: relative;
   display: grid;
+  flex: 0 0 auto;
   min-width: 0;
   padding: 5px;
   color: #3f372f;
@@ -189,19 +217,24 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   background: #efe5d7;
   box-shadow: 3px 3px 0 rgb(37 31 26 / 18%);
   cursor: pointer;
-  gap: 3px;
-  text-align: left;
+  gap: 5px;
+  scroll-snap-align: start;
+  text-align: center;
   transition: color .14s ease, background .14s ease, box-shadow .14s ease, transform .14s ease;
 }
 
-.pixel-dog-pet-selector button {
-  flex: 0 0 82px;
-  grid-template-rows: 54px auto auto;
-}
+.pixel-dog-pet-selector button { width: 64px; grid-template-rows: 46px auto; }
+.pixel-dog-scene-selector button { width: 118px; grid-template-rows: 64px auto; }
 
-.pixel-dog-scene-selector button {
-  flex: 0 0 132px;
-  grid-template-rows: 68px auto auto;
+@media (min-width: 801px) {
+  .pixel-dog-pet-selector {
+    display: grid;
+    overflow: visible;
+    padding-bottom: 2px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .pixel-dog-pet-selector button { width: auto; }
 }
 
 .pixel-dog-pet-selector img,
@@ -209,34 +242,36 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   display: block;
   width: 100%;
   height: 100%;
-  background: #dfd2c1;
+  background: #e2d6c0;
   image-rendering: pixelated;
   object-fit: cover;
+  pointer-events: none;
 }
 
 .pixel-dog-pet-selector img { object-fit: contain; }
 
 .pixel-dog-pet-selector strong,
-.pixel-dog-scene-selector strong,
-.pixel-dog-pet-selector small,
-.pixel-dog-scene-selector small {
+.pixel-dog-scene-selector strong {
   min-width: 0;
   overflow: hidden;
+  font-size: 11px;
+  line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.pixel-dog-pet-selector strong,
-.pixel-dog-scene-selector strong {
-  font-size: 11px;
-  line-height: 1.2;
-}
-
 .pixel-dog-pet-selector small,
 .pixel-dog-scene-selector small {
-  color: #7d7165;
-  font-size: 9px;
-  line-height: 1.25;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .pixel-dog-pet-selector button:hover,
@@ -263,7 +298,7 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 }
 
 .pixel-dog-scene-feedback {
-  margin: 4px 2px 0;
+  margin: 5px 2px 0;
   overflow: hidden;
   color: #6b5f53;
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
@@ -273,12 +308,12 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 }
 
 .pixel-dog-tips {
-  margin: 22px 0 0;
-  padding: 12px 13px;
+  margin: 18px 0 0;
+  padding: 10px 12px;
   color: #6b5f53;
   border: 1px dashed rgb(37 31 26 / 32%);
   font-size: 11px;
-  line-height: 2;
+  line-height: 1.9;
 }
 
 .pixel-dog-tips kbd {
@@ -297,27 +332,45 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 .pixel-dog-room {
   display: grid;
   min-width: 0;
-  min-height: calc(100svh - 66px);
-  padding: 16px clamp(14px, 2.6vw, 38px) 18px;
+  margin: clamp(12px, 1.8vw, 22px);
+  padding: 12px 14px 14px;
   outline: 0;
-  background: #d9cbb9;
+  border: 2px solid #251f1a;
+  background: #2e2721;
+  box-shadow: 12px 14px 0 rgb(37 31 26 / 22%);
   grid-template-rows: auto minmax(430px, 1fr) auto;
-  gap: 12px;
+  gap: 10px;
 }
 
 .pixel-dog-room:focus-visible {
-  box-shadow: inset 0 0 0 4px #2b8e73;
+  box-shadow: 12px 14px 0 rgb(37 31 26 / 22%), inset 0 0 0 4px #2b8e73;
 }
 
 .pixel-dog-room-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #5c5046;
+  padding: 0 2px;
+  color: #c9b797;
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: .08em;
+  letter-spacing: .12em;
+}
+
+.pixel-dog-room-bar span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pixel-dog-room-bar span:first-child::before {
+  width: 7px;
+  height: 7px;
+  background: #e85b3f;
+  box-shadow: 0 0 0 2px rgb(232 91 63 / 25%);
+  content: "";
+  flex: none;
 }
 
 .pixel-dog-scene {
@@ -328,176 +381,16 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   min-width: 0;
   min-height: 470px;
   overflow: hidden;
-  border: 1px solid rgb(37 31 26 / 28%);
   background-color: #7f756a;
   background-image: var(--scene-background);
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
-  box-shadow: 12px 14px 0 rgb(37 31 26 / 13%);
+  box-shadow:
+    inset 0 0 0 2px rgb(19 15 12 / 60%),
+    inset 0 0 72px rgb(19 15 12 / 20%);
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px);
   isolation: isolate;
-}
-
-.pixel-dog-scene::before {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 92px;
-  border-top: 2px solid rgb(37 31 26 / 28%);
-  background-color: #c8a87f;
-  background-image:
-    repeating-linear-gradient(90deg, transparent 0 54px, rgb(37 31 26 / 9%) 54px 56px),
-    linear-gradient(#cfae85, #bc9a70);
-  content: "";
-}
-
-.pixel-dog-scene::after {
-  position: absolute;
-  right: 0;
-  bottom: 86px;
-  left: 0;
-  height: 7px;
-  background: #765e48;
-  content: "";
-}
-
-.pixel-dog-sunpatch {
-  position: absolute;
-  bottom: 6px;
-  left: clamp(48px, 9vw, 140px);
-  width: clamp(120px, 15vw, 210px);
-  height: 64px;
-  background: linear-gradient(rgb(255 228 166 / 55%), rgb(255 228 166 / 8%));
-  transform: skewX(-22deg);
-}
-
-.pixel-dog-window {
-  position: absolute;
-  top: 46px;
-  left: clamp(30px, 7vw, 96px);
-  display: grid;
-  width: clamp(120px, 18vw, 220px);
-  height: clamp(108px, 17vw, 190px);
-  padding: 8px;
-  border: 6px solid #7c6652;
-  background: #b9d7cf;
-  box-shadow: 8px 8px 0 rgb(37 31 26 / 12%);
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-
-.pixel-dog-window span { background: #dce8de; }
-
-.pixel-dog-frames {
-  position: absolute;
-  top: 58px;
-  left: 41%;
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-
-.pixel-dog-frames i {
-  display: block;
-  width: 36px;
-  height: 44px;
-  border: 4px solid #7c6652;
-  background: linear-gradient(#f6e7c6 62%, #d9a05f 62%);
-  box-shadow: 4px 4px 0 rgb(37 31 26 / 10%);
-}
-
-.pixel-dog-frames i:nth-child(2) {
-  width: 30px;
-  height: 30px;
-  margin-top: 12px;
-  background: linear-gradient(#d4e4d6 62%, #7fa88c 62%);
-}
-
-.pixel-dog-shelf {
-  position: absolute;
-  top: 82px;
-  right: clamp(28px, 6vw, 86px);
-  display: flex;
-  width: clamp(110px, 14vw, 170px);
-  height: 72px;
-  align-items: flex-end;
-  justify-content: center;
-  border-bottom: 8px solid #725a45;
-  gap: 9px;
-}
-
-.pixel-dog-shelf i {
-  display: block;
-  width: 21px;
-  height: 42px;
-  background: #d3684d;
-  box-shadow: inset -5px 0 0 rgb(37 31 26 / 16%);
-}
-
-.pixel-dog-shelf i:nth-child(2) { height: 55px; background: #2b8e73; }
-.pixel-dog-shelf i:nth-child(3) { height: 34px; background: #e3b851; }
-
-.pixel-dog-plant {
-  position: absolute;
-  right: clamp(22px, 4.5vw, 68px);
-  bottom: 92px;
-  width: 46px;
-  height: 74px;
-}
-
-.pixel-dog-plant::before {
-  position: absolute;
-  bottom: 0;
-  left: 7px;
-  width: 32px;
-  height: 26px;
-  background: #c4653f;
-  box-shadow: inset -7px 0 0 rgb(37 31 26 / 18%);
-  content: "";
-}
-
-.pixel-dog-plant::after {
-  position: absolute;
-  bottom: 24px;
-  left: 0;
-  width: 46px;
-  height: 50px;
-  background:
-    linear-gradient(#3f8f5f, #3f8f5f) 19px 0 / 8px 34px,
-    linear-gradient(#357a50, #357a50) 5px 14px / 12px 28px,
-    linear-gradient(#4ba06b, #4ba06b) 30px 12px / 11px 26px,
-    linear-gradient(#357a50, #357a50) 12px 22px / 9px 20px,
-    linear-gradient(#4ba06b, #4ba06b) 26px 26px / 8px 16px;
-  background-repeat: no-repeat;
-  content: "";
-}
-
-.pixel-dog-rug {
-  position: absolute;
-  bottom: 13px;
-  left: 50%;
-  z-index: 1;
-  width: min(440px, 64%);
-  height: 60px;
-  border: 3px solid #8f4a35;
-  background:
-    linear-gradient(#e9b36c, #e9b36c) 12px 12px / calc(100% - 24px) 6px no-repeat,
-    linear-gradient(#e9b36c, #e9b36c) 12px calc(100% - 18px) / calc(100% - 24px) 6px no-repeat,
-    #cd6a4b;
-  clip-path: polygon(8px 0, calc(100% - 8px) 0, calc(100% - 8px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 4px) calc(100% - 8px), calc(100% - 4px) calc(100% - 4px), calc(100% - 8px) calc(100% - 4px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 8px), 0 calc(100% - 8px), 0 8px, 4px 8px, 4px 4px, 8px 4px);
-  transform: translateX(-50%);
-}
-
-.pixel-dog-scene::before,
-.pixel-dog-scene::after,
-.pixel-dog-scene > .pixel-dog-sunpatch,
-.pixel-dog-scene > .pixel-dog-window,
-.pixel-dog-scene > .pixel-dog-frames,
-.pixel-dog-scene > .pixel-dog-shelf,
-.pixel-dog-scene > .pixel-dog-plant,
-.pixel-dog-scene > .pixel-dog-rug {
-  display: none;
 }
 
 .pixel-dog-ambient {
@@ -647,7 +540,7 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   color: #264f44;
   border: 2px solid #251f1a;
   background: #fffdf6;
-  box-shadow: 3px 3px 0 rgb(37 31 26 / 18%);
+  box-shadow: 3px 3px 0 rgb(19 15 12 / 35%);
   font-size: 12px;
   font-weight: 800;
   pointer-events: none;
@@ -892,21 +785,21 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   align-items: stretch;
   justify-content: flex-end;
   flex-wrap: wrap;
-  border-top: 1px solid rgb(37 31 26 / 22%);
-  gap: 8px;
-  padding-top: 13px;
+  border-top: 1px solid rgb(246 239 226 / 16%);
+  gap: 10px;
+  padding-top: 12px;
 }
 
 .pixel-dog-controls button {
   min-height: 44px;
-  padding: 0 18px;
-  border: 2px solid #251f1a;
+  padding: 0 16px;
+  border: 2px solid #171310;
   background: #f8f1e6;
+  box-shadow: 3px 3px 0 rgb(10 7 5 / 55%);
   cursor: pointer;
   font-size: 12px;
   font-weight: 850;
-  box-shadow: 3px 3px 0 #251f1a;
-  transition: color .14s ease, background .14s ease, transform .14s ease;
+  transition: color .14s ease, background .14s ease, transform .14s ease, box-shadow .14s ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -919,26 +812,26 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 .pixel-dog-controls button:focus-visible {
   color: #fffaf1;
   background: #2b8e73;
-  outline: 2px solid #251f1a;
+  outline: 2px solid #f3e2ae;
   outline-offset: 2px;
 }
 
 .pixel-dog-controls button:active {
-  box-shadow: 1px 1px 0 #251f1a;
+  box-shadow: 1px 1px 0 rgb(10 7 5 / 55%);
   transform: translate(2px, 2px);
 }
 
 .pixel-dog-move-controls {
   display: grid;
   margin-right: auto;
-  grid-template-columns: repeat(2, 52px);
-  gap: 6px;
+  grid-template-columns: repeat(2, 56px);
+  gap: 8px;
 }
 
 .pixel-dog-move-controls button {
   padding: 0;
-  color: #fffaf1;
-  background: #251f1a;
+  color: #fff6e8;
+  background: #c84831;
   font-family: ui-monospace, monospace;
   font-size: 20px;
 }
@@ -946,7 +839,7 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
 .pixel-dog-move-controls button:hover,
 .pixel-dog-move-controls button:focus-visible {
   color: #fffaf1;
-  background: #c84831;
+  background: #e85b3f;
 }
 
 .pixel-dog-action-controls {
@@ -1051,32 +944,40 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   .pixel-dog-studio {
     overflow-x: hidden;
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
   }
   .pixel-dog-intro {
     max-height: none;
-    padding: 16px 14px 18px;
+    padding: 12px 12px 14px;
     overflow: visible;
     border-right: 0;
     border-bottom: 1px solid #251f1a;
   }
+  .pixel-dog-intro .eyebrow { display: none; }
   .pixel-dog-intro h1 {
     max-width: none;
-    font-size: clamp(30px, 8vw, 38px);
-    line-height: 1;
+    font-size: clamp(24px, 6.4vw, 30px);
+    line-height: 1.05;
   }
   .pixel-dog-intro h1 br { display: none; }
   .pixel-dog-intro > p:not(.eyebrow),
   .pixel-dog-facts,
   .pixel-dog-tips { display: none; }
-  .pixel-dog-selector-group { margin-top: 10px; }
-  .pixel-dog-pet-selector button { flex-basis: 76px; }
-  .pixel-dog-scene-selector button { flex-basis: 124px; }
+  .pixel-dog-selector-group { margin-top: 9px; }
+  .pixel-dog-selector-group > p:first-child { margin-bottom: 5px; }
+  .pixel-dog-pet-selector button { width: 56px; grid-template-rows: 40px auto; }
+  .pixel-dog-scene-selector button { width: 104px; grid-template-rows: 56px auto; }
   .pixel-dog-room {
     min-width: 0;
     min-height: 0;
-    padding: 12px 12px 14px;
-    grid-template-rows: auto minmax(320px, 52svh) auto;
-    gap: 10px;
+    margin: 10px;
+    padding: 9px 10px 11px;
+    box-shadow: 6px 7px 0 rgb(37 31 26 / 22%);
+    grid-template-rows: auto minmax(320px, 50svh) auto;
+    gap: 8px;
+  }
+  .pixel-dog-room:focus-visible {
+    box-shadow: 6px 7px 0 rgb(37 31 26 / 22%), inset 0 0 0 4px #2b8e73;
   }
   .pixel-dog-scene { --dog-scale: 1.12; min-height: 320px; }
   .pixel-dog-room[data-scene="snow-cabin"] .pixel-dog-ambient::before {
@@ -1091,6 +992,7 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
     max-width: 190px;
     font-size: 11px;
   }
+  .pixel-dog-controls { gap: 8px; padding-top: 10px; }
   .pixel-dog-action-controls {
     display: grid;
     min-width: 0;
