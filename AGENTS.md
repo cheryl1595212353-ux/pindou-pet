@@ -35,14 +35,15 @@ pnpm --filter @pindou/web dev --host 127.0.0.1
 不要先通读所有历史计划。按以下顺序获取当前上下文：
 
 1. `README.md`
-2. `docs/product/interactive-pixel-dog-feature-spec.md`
-3. `docs/product/multi-pet-frontend-design-features.md`
-4. `apps/web/src/app/pixel-dog/PixelDogStudio.tsx`
-5. `apps/web/src/app/pixel-dog/pixelDogModel.ts`
-6. `apps/web/src/app/pixel-dog/petCatalog.ts`
-7. `apps/web/src/app/pixel-dog/sceneCatalog.ts`
-8. 同目录测试和 `apps/web/src/app/App.test.tsx`
-9. 与当前任务直接相关的 API、合同或历史文件
+2. `REQUIREMENTS_AND_BUGS.md`
+3. `docs/product/interactive-pixel-dog-feature-spec.md`
+4. `docs/product/multi-pet-frontend-design-features.md`
+5. `apps/web/src/app/pixel-dog/PixelDogStudio.tsx`
+6. `apps/web/src/app/pixel-dog/pixelDogModel.ts`
+7. `apps/web/src/app/pixel-dog/petCatalog.ts`
+8. `apps/web/src/app/pixel-dog/sceneCatalog.ts`
+9. 同目录测试和 `apps/web/src/app/App.test.tsx`
+10. 与当前任务直接相关的 API、合同或历史文件
 
 事实层级：
 
@@ -64,6 +65,7 @@ pnpm --filter @pindou/web dev --host 127.0.0.1
 | `apps/api/` | FastAPI 基础设施和测试 | API、存储、队列或健康检查任务 |
 | `packages/contracts/` | OpenAPI 快照和 TypeScript 合同 | API 合同改变时 |
 | `migrations/` | Alembic 数据库迁移 | 数据库结构改变时 |
+| `REQUIREMENTS_AND_BUGS.md` | 需求与 Bug 的长期协作登记表 | 登记、更新或关闭协作事项 |
 | `docs/product/` | 当前功能规格和设计说明 | 产品合同改变时同步更新 |
 | `docs/qa/` | 可机器读取的验收记录 | 完成对应真实验收后更新 |
 | `docs/superpowers/` | 历史计划和设计记录 | 仅用于追溯，不作为默认实现依据 |
@@ -349,13 +351,15 @@ Pages。
 ## 10. 推荐任务流程
 
 1. 用一句话复述目标和成功标准。
-2. 检查状态、阅读最小必要文件并确认当前行为。
-3. 对可能改变产品方向的歧义先提出问题。
-4. 做最小、可追溯的修改。
-5. 运行与改动风险匹配的测试。
-6. 如果涉及视觉，提供真实浏览器证据或明确说明未完成。
-7. 检查最终 diff，不夹带生成文件或无关清理。
-8. 只在用户明确授权后执行提交、推送或部署。
+2. 搜索 `REQUIREMENTS_AND_BUGS.md` 和 GitHub，检查是否已有对应事项。
+3. 检查状态、阅读最小必要文件并确认当前行为。
+4. 对可能改变产品方向的歧义先提出问题。
+5. 做最小、可追溯的修改。
+6. 运行与改动风险匹配的测试。
+7. 如果涉及视觉，提供真实浏览器证据或明确说明未完成。
+8. 如果任务来自协作登记表，更新状态、证据和关联 GitHub 记录。
+9. 检查最终 diff，不夹带生成文件或无关清理。
+10. 只在用户明确授权后执行提交、推送或部署。
 
 ## 11. 完成时的报告要求
 

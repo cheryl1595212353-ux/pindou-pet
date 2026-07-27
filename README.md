@@ -196,6 +196,12 @@ PYTHONPATH=apps/api/src \
 仓库中仍保留部分历史 3D/体素实验模块和编辑、房间、导出路由边界，
 但它们没有接入当前默认首页，也不代表当前产品能力。
 
+## 协作登记
+
+新增需求或报告 Bug 时，请使用
+[需求与 Bug 协作登记表](REQUIREMENTS_AND_BUGS.md)。文档包含统一编号、
+状态、优先级、可复制模板和推荐 GitHub 提交流程。
+
 ## 设计与验收文档
 
 - [多宠物 2D 互动前端设计与功能说明](docs/product/multi-pet-frontend-design-features.md)
