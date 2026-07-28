@@ -15,13 +15,20 @@ import {
   CELL_HEIGHT,
   CELL_WIDTH,
   DOG_CLIPS,
+  MAX_STAGE_DEPTH,
+  MAX_STAGE_POSITION,
+  MIN_STAGE_DEPTH,
+  MIN_STAGE_POSITION,
   SLEEPING_AFTER_MS,
   WAITING_AFTER_MS,
   clampStagePosition,
   dogReducer,
+  getDepthScale,
   getPropSide,
   type DogEvent,
+  type MoveDirection,
   type PixelDogState,
+  type StagePosition,
 } from "./pixelDogModel";
 import {
   DEFAULT_PET_ID,
@@ -38,6 +45,9 @@ import {
 
 const MOVE_STEP = 1.25;
 const MOVE_INTERVAL_MS = 45;
+const MIN_PET_SIZE = 70;
+const MAX_PET_SIZE = 125;
+const PET_SIZE_STEP = 5;
 const PETTING_DELAY_MS = 240;
 const PETTING_DRAG_THRESHOLD = 7;
 const INTERACTION_PROPS: Partial<
@@ -48,6 +58,19 @@ const INTERACTION_PROPS: Partial<
   bathing: { label: "宠物浴盆", modifier: "bath" },
   dancing: { label: "跳舞节拍", modifier: "dance" },
   posing: { label: "拍照闪光", modifier: "camera" },
+};
+const INITIAL_STAGE_POSITION: StagePosition = { x: 50, y: 50 };
+const MOVEMENT_KEYS: Readonly<Record<string, MoveDirection>> = {
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  ArrowDown: "forward",
+  ArrowUp: "backward",
+};
+const MOVEMENT_DELTAS: Readonly<Record<MoveDirection, StagePosition>> = {
+  left: { x: -MOVE_STEP, y: 0 },
+  right: { x: MOVE_STEP, y: 0 },
+  forward: { x: 0, y: MOVE_STEP },
+  backward: { x: 0, y: -MOVE_STEP },
 };
 
 function usePrefersReducedMotion(): boolean {
@@ -114,7 +137,10 @@ export function PixelDogStudio() {
   const [state, dispatch] = useReducer(dogReducer, "idle");
   const [petId, setPetId] = useState<PetId>(DEFAULT_PET_ID);
   const [sceneId, setSceneId] = useState<SceneId>(DEFAULT_SCENE_ID);
-  const [stagePosition, setStagePosition] = useState(50);
+  const [stagePosition, setStagePosition] = useState<StagePosition>(
+    INITIAL_STAGE_POSITION,
+  );
+  const [petSize, setPetSize] = useState(100);
   const [activityVersion, setActivityVersion] = useState(0);
   const [assetFailed, setAssetFailed] = useState(false);
   const suppressClickRef = useRef(false);
@@ -129,7 +155,12 @@ export function PixelDogStudio() {
   const pet = getPetById(petId);
   const scene = getSceneById(sceneId);
   const interactionProp = INTERACTION_PROPS[state];
-  const propSide = getPropSide(stagePosition);
+  const propSide = getPropSide(stagePosition.x);
+  const horizontalProgress = (stagePosition.x - MIN_STAGE_POSITION)
+    / (MAX_STAGE_POSITION - MIN_STAGE_POSITION);
+  const depthProgress = (stagePosition.y - MIN_STAGE_DEPTH)
+    / (MAX_STAGE_DEPTH - MIN_STAGE_DEPTH);
+  const dogOuterScale = (petSize / 100) * getDepthScale(stagePosition.y);
 
   const interact = useCallback((event: DogEvent) => {
     setActivityVersion((version) => version + 1);
@@ -140,6 +171,15 @@ export function PixelDogStudio() {
     setActivityVersion((version) => version + 1);
     dispatch({ type: "wake" });
   }, []);
+
+  const startMoving = useCallback((direction: MoveDirection) => {
+    const delta = MOVEMENT_DELTAS[direction];
+    setStagePosition((position) => clampStagePosition({
+      x: position.x + delta.x,
+      y: position.y + delta.y,
+    }));
+    interact({ type: "move", direction });
+  }, [interact]);
 
   const selectPet = (nextPetId: PetId) => {
     if (nextPetId === petId) return;
@@ -169,15 +209,16 @@ export function PixelDogStudio() {
   }, [activityVersion]);
 
   useEffect(() => {
-    if (
-      reducedMotion
-      || (state !== "moving-left" && state !== "moving-right")
-    ) {
+    if (reducedMotion || !state.startsWith("moving-")) {
       return;
     }
-    const direction = state === "moving-left" ? -1 : 1;
+    const direction = state.slice("moving-".length) as MoveDirection;
+    const delta = MOVEMENT_DELTAS[direction];
     const movementTimer = window.setInterval(() => {
-      setStagePosition((position) => clampStagePosition(position + direction * MOVE_STEP));
+      setStagePosition((position) => clampStagePosition({
+        x: position.x + delta.x,
+        y: position.y + delta.y,
+      }));
     }, MOVE_INTERVAL_MS);
     return () => window.clearInterval(movementTimer);
   }, [reducedMotion, state]);
@@ -189,19 +230,17 @@ export function PixelDogStudio() {
 
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.repeat) return;
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+    const direction = MOVEMENT_KEYS[event.key];
+    if (direction) {
       event.preventDefault();
-      interact({
-        type: "move",
-        direction: event.key === "ArrowLeft" ? "left" : "right",
-      });
+      startMoving(direction);
       return;
     }
     wakeFromAmbientInput();
   };
 
   const handleKeyUp = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+    if (MOVEMENT_KEYS[event.key]) {
       event.preventDefault();
       interact({ type: "stop" });
     }
@@ -257,8 +296,21 @@ export function PixelDogStudio() {
     backgroundSize: `${ATLAS_WIDTH}px ${ATLAS_HEIGHT}px`,
   };
   const sceneStyle = {
-    "--dog-ratio": (stagePosition / 100).toFixed(4),
+    "--dog-x-progress": horizontalProgress.toFixed(4),
+    "--dog-depth-progress": depthProgress.toFixed(4),
+    "--dog-bottom": `calc(26px + ${(1 - depthProgress) * 18}%)`,
+    "--dog-safe-half-desktop": `${96 * 1.55 * dogOuterScale}px`,
+    "--dog-safe-half-mobile": `${96 * 1.12 * dogOuterScale}px`,
     "--scene-background": `url("${scene.backgroundPath}")`,
+  } as CSSProperties;
+  const worldStyle = {
+    "--dog-outer-scale": dogOuterScale.toFixed(4),
+    "--bowl-x": `${pet.interactionAnchors.bowl.x}px`,
+    "--bowl-y": `${pet.interactionAnchors.bowl.y}px`,
+    "--ball-x": `${pet.interactionAnchors.ball.x}px`,
+    "--ball-y": `${pet.interactionAnchors.ball.y}px`,
+    "--shadow-width": `${pet.interactionAnchors.shadowWidth}px`,
+    "--shadow-opacity": (0.16 + depthProgress * 0.12).toFixed(3),
   } as CSSProperties;
 
   return (
@@ -267,13 +319,13 @@ export function PixelDogStudio() {
         <p className="eyebrow">PIXEL PET · {pet.id.toUpperCase()}</p>
         <h1>和{pet.displayName}<br />一起玩</h1>
         <p>
-          点击它打招呼，长按轻轻抚摸；用方向键带它散步，或者等它自己慢慢睡着。
+          点击它打招呼，长按轻轻抚摸；用四个方向键带它散步，或者等它自己慢慢睡着。
         </p>
 
         <dl className="pixel-dog-facts">
           <div><dt>形象</dt><dd>{pet.breed} · 32 色像素</dd></div>
           <div><dt>状态</dt><dd>9 组互动动画</dd></div>
-          <div><dt>输入</dt><dd>点击 · 长按 · 方向键</dd></div>
+          <div><dt>输入</dt><dd>点击 · 长按 · 四方向键</dd></div>
         </dl>
 
         <div className="pixel-dog-selector-group" aria-label="选择宠物">
@@ -318,7 +370,7 @@ export function PixelDogStudio() {
         </div>
 
         <p className="pixel-dog-tips">
-          <kbd>←</kbd> <kbd>→</kbd> 带{pet.displayName}散步，点击它打招呼，长按可以抚摸它。
+          <kbd>←</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>→</kbd> 带{pet.displayName}在场景中散步。
         </p>
       </aside>
 
@@ -336,76 +388,103 @@ export function PixelDogStudio() {
       >
         <div className="pixel-dog-room-bar" aria-hidden="true">
           <span>{pet.id.toUpperCase()}’S ROOM</span>
-          <span>{Math.round(stagePosition)} / 100</span>
+          <span>X {Math.round(stagePosition.x)} · Y {Math.round(stagePosition.y)}</span>
         </div>
 
         <div className="pixel-dog-scene" style={sceneStyle}>
           <div aria-hidden="true" className="pixel-dog-ambient" />
 
           <div
-            aria-live="polite"
-            className="pixel-dog-state"
-            role="status"
+            className="pixel-dog-world"
+            data-ball-side={propSide}
+            data-state={state}
+            style={worldStyle}
           >
-            <span aria-hidden="true" />
-            {pet.displayName}{clip.status}
-          </div>
-
-          {interactionProp && (
             <div
-              aria-label={interactionProp.label}
-              className={`pixel-dog-prop pixel-dog-prop--${interactionProp.modifier}`}
-              role="img"
+              aria-live="polite"
+              className="pixel-dog-state"
+              role="status"
             >
               <span aria-hidden="true" />
+              {pet.displayName}{clip.status}
             </div>
-          )}
 
-          {state === "feeding" && (
-            <div
-              aria-label={`${pet.displayName}的食盆`}
-              className="pixel-dog-bowl"
-              data-side={propSide}
-              role="img"
-            >
-              <span aria-hidden="true">•••</span>
+            <div className="pixel-dog-scale-layer">
+              <div aria-hidden="true" className="pixel-dog-shadow" />
+
+              {interactionProp && (
+                <div
+                  aria-label={interactionProp.label}
+                  className={`pixel-dog-prop pixel-dog-prop--${interactionProp.modifier}`}
+                  data-anchor={state === "playing-ball" ? "head-front" : undefined}
+                  data-side={state === "playing-ball" ? propSide : undefined}
+                  role="img"
+                >
+                  <span aria-hidden="true" />
+                </div>
+              )}
+
+              {state === "feeding" && (
+                <div
+                  aria-label={`${pet.displayName}的食盆`}
+                  className="pixel-dog-bowl"
+                  data-anchor="mouth"
+                  role="img"
+                >
+                  <span aria-hidden="true">•••</span>
+                </div>
+              )}
+
+              <div className="pixel-dog-positioner">
+                <img
+                  alt=""
+                  className="pixel-dog-asset-probe"
+                  onError={() => setAssetFailed(true)}
+                  src={pet.spritesheetPath}
+                />
+                {assetFailed ? (
+                  <p className="pixel-dog-asset-error" role="alert">
+                    {pet.displayName}的动画图集没有加载成功。
+                  </p>
+                ) : (
+                  <button
+                    aria-label={`抚摸或点击${pet.displayName}`}
+                    className="pixel-dog-sprite"
+                    data-action-facing={state === "playing-ball" ? propSide : undefined}
+                    data-frame={frame}
+                    data-state={state}
+                    onClick={handleDogClick}
+                    onPointerCancel={stopPetting}
+                    onPointerDown={startPetting}
+                    onPointerMove={continuePetting}
+                    onPointerUp={stopPetting}
+                    style={spriteStyle}
+                    type="button"
+                  />
+                )}
+              </div>
             </div>
-          )}
-
-          <div className="pixel-dog-positioner">
-            <img
-              alt=""
-              className="pixel-dog-asset-probe"
-              onError={() => setAssetFailed(true)}
-              src={pet.spritesheetPath}
-            />
-            {assetFailed ? (
-              <p className="pixel-dog-asset-error" role="alert">
-                {pet.displayName}的动画图集没有加载成功。
-              </p>
-            ) : (
-              <button
-                aria-label={`抚摸或点击${pet.displayName}`}
-                className="pixel-dog-sprite"
-                data-frame={frame}
-                data-state={state}
-                onClick={handleDogClick}
-                onPointerCancel={stopPetting}
-                onPointerDown={startPetting}
-                onPointerMove={continuePetting}
-                onPointerUp={stopPetting}
-                style={spriteStyle}
-                type="button"
-              />
-            )}
           </div>
         </div>
 
         <div className="pixel-dog-controls" aria-label={`${pet.displayName}互动操作`}>
           <div className="pixel-dog-move-controls">
             <button
+              className="pixel-dog-move-controls__backward"
+              aria-label="向后移动"
+              onPointerCancel={() => interact({ type: "stop" })}
+              onPointerDown={() => startMoving("backward")}
+              onPointerLeave={() => interact({ type: "stop" })}
+              onPointerUp={() => interact({ type: "stop" })}
+              type="button"
+            >
+              ↑
+            </button>
+            <button
+              className="pixel-dog-move-controls__left"
               aria-label="向左移动"
-              onPointerDown={() => interact({ type: "move", direction: "left" })}
+              onPointerCancel={() => interact({ type: "stop" })}
+              onPointerDown={() => startMoving("left")}
               onPointerLeave={() => interact({ type: "stop" })}
               onPointerUp={() => interact({ type: "stop" })}
               type="button"
@@ -413,8 +492,21 @@ export function PixelDogStudio() {
               ←
             </button>
             <button
+              className="pixel-dog-move-controls__forward"
+              aria-label="向前移动"
+              onPointerCancel={() => interact({ type: "stop" })}
+              onPointerDown={() => startMoving("forward")}
+              onPointerLeave={() => interact({ type: "stop" })}
+              onPointerUp={() => interact({ type: "stop" })}
+              type="button"
+            >
+              ↓
+            </button>
+            <button
+              className="pixel-dog-move-controls__right"
               aria-label="向右移动"
-              onPointerDown={() => interact({ type: "move", direction: "right" })}
+              onPointerCancel={() => interact({ type: "stop" })}
+              onPointerDown={() => startMoving("right")}
               onPointerLeave={() => interact({ type: "stop" })}
               onPointerUp={() => interact({ type: "stop" })}
               type="button"
@@ -422,6 +514,24 @@ export function PixelDogStudio() {
               →
             </button>
           </div>
+          <label className="pixel-dog-size-control">
+            <span>
+              宠物大小
+              <strong>{petSize}%</strong>
+            </span>
+            <input
+              aria-label="宠物大小"
+              max={MAX_PET_SIZE}
+              min={MIN_PET_SIZE}
+              onChange={(event) => {
+                setPetSize(Number(event.currentTarget.value));
+                wakeFromAmbientInput();
+              }}
+              step={PET_SIZE_STEP}
+              type="range"
+              value={petSize}
+            />
+          </label>
           <div className="pixel-dog-action-controls">
             <button onClick={() => interact({ type: "jump" })} type="button">
               跳跃

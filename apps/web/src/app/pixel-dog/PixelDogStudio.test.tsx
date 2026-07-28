@@ -67,10 +67,13 @@ describe("PixelDogStudio", () => {
     expect(screen.getByRole("status")).toHaveTextContent("豆包正在呼吸和眨眼");
   });
 
-  it("keeps the current scene and stage position when changing pets", () => {
+  it("keeps the current scene, two-dimensional position, and size when changing pets", () => {
     const { container } = render(<PixelDogStudio />);
 
     fireEvent.click(screen.getByRole("button", { name: "切换场景：星光露营" }));
+    fireEvent.change(screen.getByRole("slider", { name: "宠物大小" }), {
+      target: { value: "115" },
+    });
     const moveRight = screen.getByRole("button", { name: "向右移动" });
     fireEvent.pointerDown(moveRight);
     act(() => {
@@ -79,8 +82,8 @@ describe("PixelDogStudio", () => {
     fireEvent.pointerUp(moveRight);
 
     const scene = container.querySelector<HTMLElement>(".pixel-dog-scene");
-    const stagePosition = scene?.style.getPropertyValue("--dog-ratio");
-    expect(stagePosition).not.toBe("0.5000");
+    const horizontalPosition = scene?.style.getPropertyValue("--dog-x-progress");
+    expect(horizontalPosition).not.toBe("0.5000");
 
     fireEvent.click(screen.getByRole("button", { name: "喂食" }));
     expect(screen.getByRole("status")).toHaveTextContent("豆包正在吃饭");
@@ -98,7 +101,8 @@ describe("PixelDogStudio", () => {
     expect(screen.getByRole("button", { name: "抚摸或点击雪团" })).toHaveStyle(
       'background-image: url("/pixel-dog/xuetuan/spritesheet.webp")',
     );
-    expect(scene?.style.getPropertyValue("--dog-ratio")).toBe(stagePosition);
+    expect(scene?.style.getPropertyValue("--dog-x-progress")).toBe(horizontalPosition);
+    expect(screen.getByRole("slider", { name: "宠物大小" })).toHaveValue("115");
   });
 
   it("retains an asset error until a different pet is selected", () => {
@@ -159,32 +163,20 @@ describe("PixelDogStudio", () => {
     expect(screen.getByRole("status")).toHaveTextContent("豆包跳起来了");
   });
 
-  it("places the food bowl on the safe side of the stage", () => {
-    render(<PixelDogStudio />);
+  it("anchors the food bowl below the pet's mouth", () => {
+    const { container } = render(<PixelDogStudio />);
 
     fireEvent.click(screen.getByRole("button", { name: "喂食" }));
-    expect(screen.getByRole("img", { name: "豆包的食盆" })).toHaveAttribute(
-      "data-side",
-      "right",
-    );
+    const bowl = screen.getByRole("img", { name: "豆包的食盆" });
+    const world = container.querySelector<HTMLElement>(".pixel-dog-world");
 
-    const moveRight = screen.getByRole("button", { name: "向右移动" });
-    fireEvent.pointerDown(moveRight);
-    act(() => {
-      vi.advanceTimersByTime(45 * 34);
-    });
-    fireEvent.pointerUp(moveRight);
-    expect(screen.getByText("92 / 100")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "喂食" }));
-    expect(screen.getByRole("img", { name: "豆包的食盆" })).toHaveAttribute(
-      "data-side",
-      "left",
-    );
+    expect(bowl).toHaveAttribute("data-anchor", "mouth");
+    expect(world?.style.getPropertyValue("--bowl-x")).toBe("78px");
+    expect(world?.style.getPropertyValue("--bowl-y")).toBe("168px");
   });
 
-  it("moves with focused keyboard controls and stops on key release", () => {
-    render(<PixelDogStudio />);
+  it("moves in four directions with buttons and focused keyboard controls", () => {
+    const { container } = render(<PixelDogStudio />);
     const playroom = screen.getByRole("region", { name: "豆包的客厅" });
 
     fireEvent.keyDown(playroom, { key: "ArrowLeft" });
@@ -192,6 +184,91 @@ describe("PixelDogStudio", () => {
 
     fireEvent.keyUp(playroom, { key: "ArrowLeft" });
     expect(screen.getByRole("status")).toHaveTextContent("豆包正在呼吸和眨眼");
+
+    const moveBackward = screen.getByRole("button", { name: "向后移动" });
+    fireEvent.pointerDown(moveBackward);
+    act(() => {
+      vi.advanceTimersByTime(90);
+    });
+    fireEvent.pointerUp(moveBackward);
+
+    expect(container.querySelector<HTMLElement>(".pixel-dog-scene")?.style
+      .getPropertyValue("--dog-depth-progress")).not.toBe("0.5000");
+
+    fireEvent.keyDown(playroom, { key: "ArrowDown" });
+    expect(screen.getByRole("status")).toHaveTextContent("豆包正在向前走");
+    fireEvent.keyUp(playroom, { key: "ArrowDown" });
+
+    expect(screen.getByRole("button", { name: "向前移动" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "向右移动" })).toBeVisible();
+  });
+
+  it("clamps forward and backward movement at the depth boundaries", () => {
+    render(<PixelDogStudio />);
+
+    const moveBackward = screen.getByRole("button", { name: "向后移动" });
+    fireEvent.pointerDown(moveBackward);
+    act(() => {
+      vi.advanceTimersByTime(45 * 80);
+    });
+    fireEvent.pointerUp(moveBackward);
+    expect(screen.getByText("X 50 · Y 20")).toBeInTheDocument();
+
+    const moveForward = screen.getByRole("button", { name: "向前移动" });
+    fireEvent.pointerDown(moveForward);
+    act(() => {
+      vi.advanceTimersByTime(45 * 80);
+    });
+    fireEvent.pointerUp(moveForward);
+    expect(screen.getByText("X 50 · Y 80")).toBeInTheDocument();
+  });
+
+  it("changes pet size with an accessible slider and adapts the shared shadow", () => {
+    const { container } = render(<PixelDogStudio />);
+    const slider = screen.getByRole("slider", { name: "宠物大小" });
+    const world = container.querySelector<HTMLElement>(".pixel-dog-world");
+
+    expect(slider).toHaveValue("100");
+    expect(slider).toHaveAttribute("min", "70");
+    expect(slider).toHaveAttribute("max", "125");
+    expect(container.querySelector(".pixel-dog-shadow")).toBeInTheDocument();
+    expect(world?.style.getPropertyValue("--shadow-width")).toBe("148px");
+
+    fireEvent.change(slider, { target: { value: "125" } });
+
+    expect(slider).toHaveValue("125");
+    expect(screen.getByText("125%")).toBeInTheDocument();
+    expect(Number(world?.style.getPropertyValue("--dog-outer-scale")))
+      .toBeGreaterThan(1.2);
+  });
+
+  it("keeps the ball in front of the head and flips both at the left boundary", () => {
+    render(<PixelDogStudio />);
+
+    fireEvent.click(screen.getByRole("button", { name: "玩球" }));
+    expect(screen.getByRole("img", { name: "玩具球" })).toHaveAttribute(
+      "data-anchor",
+      "head-front",
+    );
+    expect(screen.getByRole("img", { name: "玩具球" })).toHaveAttribute(
+      "data-side",
+      "left",
+    );
+
+    const moveLeft = screen.getByRole("button", { name: "向左移动" });
+    fireEvent.pointerDown(moveLeft);
+    act(() => {
+      vi.advanceTimersByTime(45 * 80);
+    });
+    fireEvent.pointerUp(moveLeft);
+
+    fireEvent.click(screen.getByRole("button", { name: "玩球" }));
+    expect(screen.getByRole("img", { name: "玩具球" })).toHaveAttribute(
+      "data-side",
+      "right",
+    );
+    expect(screen.getByRole("button", { name: "抚摸或点击豆包" }))
+      .toHaveAttribute("data-action-facing", "right");
   });
 
   it("waits and then sleeps after the approved inactivity windows", () => {
