@@ -40,6 +40,7 @@ describe("product shell", () => {
     expect(screen.getByRole("button", { name: "向前移动" })).toBeVisible();
     expect(screen.getByRole("button", { name: "向后移动" })).toBeVisible();
     expect(screen.getByRole("slider", { name: "宠物大小" })).toHaveValue("100");
+    expect(screen.getByRole("button", { name: "和豆包聊天" })).toBeVisible();
   });
 
   it("provides the four approved route boundaries", () => {

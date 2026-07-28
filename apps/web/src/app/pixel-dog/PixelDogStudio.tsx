@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type FormEvent,
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
@@ -37,6 +38,11 @@ import {
   type PetId,
 } from "./petCatalog";
 import {
+  MOOD_PRESENTATIONS,
+  createPetReply,
+  type PetReply,
+} from "./petChatModel";
+import {
   DEFAULT_SCENE_ID,
   SCENES,
   getSceneById,
@@ -50,6 +56,8 @@ const MAX_PET_SIZE = 125;
 const PET_SIZE_STEP = 5;
 const PETTING_DELAY_MS = 240;
 const PETTING_DRAG_THRESHOLD = 7;
+const MOOD_BURST_MS = 3_200;
+const TYPEWRITER_STEP_MS = 28;
 const INTERACTION_PROPS: Partial<
   Record<PixelDogState, { readonly label: string; readonly modifier: string }>
 > = {
@@ -133,6 +141,32 @@ function useSpriteFrame(
   return frame;
 }
 
+function useTypewriterText(text: string, reducedMotion: boolean): string {
+  const [visibleText, setVisibleText] = useState(reducedMotion ? text : "");
+
+  useEffect(() => {
+    if (!text || reducedMotion) {
+      setVisibleText(text);
+      return;
+    }
+
+    let visibleLength = 0;
+    let timer = 0;
+    setVisibleText("");
+    const revealNextCharacter = () => {
+      visibleLength += 1;
+      setVisibleText(text.slice(0, visibleLength));
+      if (visibleLength < text.length) {
+        timer = window.setTimeout(revealNextCharacter, TYPEWRITER_STEP_MS);
+      }
+    };
+    timer = window.setTimeout(revealNextCharacter, TYPEWRITER_STEP_MS);
+    return () => window.clearTimeout(timer);
+  }, [reducedMotion, text]);
+
+  return visibleText;
+}
+
 export function PixelDogStudio() {
   const [state, dispatch] = useReducer(dogReducer, "idle");
   const [petId, setPetId] = useState<PetId>(DEFAULT_PET_ID);
@@ -141,12 +175,26 @@ export function PixelDogStudio() {
     INITIAL_STAGE_POSITION,
   );
   const [petSize, setPetSize] = useState(100);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
+  const [moodBurstVisible, setMoodBurstVisible] = useState(false);
+  const [moodBurstId, setMoodBurstId] = useState(0);
+  const [chatReply, setChatReply] = useState<PetReply>(() => createPetReply({
+    message: "你好",
+    pet: getPetById(DEFAULT_PET_ID),
+    scene: getSceneById(DEFAULT_SCENE_ID),
+    state: "idle",
+  }));
   const [activityVersion, setActivityVersion] = useState(0);
   const [assetFailed, setAssetFailed] = useState(false);
   const suppressClickRef = useRef(false);
   const pettingActiveRef = useRef(false);
   const pettingTimerRef = useRef(0);
   const pointerStartRef = useRef({ x: 0, y: 0 });
+  const chatInputRef = useRef<HTMLInputElement>(null);
+  const chatToggleRef = useRef<HTMLButtonElement>(null);
+  const moodBurstTimerRef = useRef(0);
   const reducedMotion = usePrefersReducedMotion();
 
   const completeClip = useCallback(() => dispatch({ type: "complete" }), []);
@@ -161,16 +209,41 @@ export function PixelDogStudio() {
   const depthProgress = (stagePosition.y - MIN_STAGE_DEPTH)
     / (MAX_STAGE_DEPTH - MIN_STAGE_DEPTH);
   const dogOuterScale = (petSize / 100) * getDepthScale(stagePosition.y);
+  const moodPresentation = MOOD_PRESENTATIONS[chatReply.mood];
+  const typedReply = useTypewriterText(
+    chatOpen ? chatReply.text : "",
+    reducedMotion,
+  );
 
   const interact = useCallback((event: DogEvent) => {
     setActivityVersion((version) => version + 1);
     dispatch(event);
   }, []);
 
+  const triggerMoodBurst = useCallback(() => {
+    window.clearTimeout(moodBurstTimerRef.current);
+    setMoodBurstId((id) => id + 1);
+    setMoodBurstVisible(true);
+    moodBurstTimerRef.current = window.setTimeout(
+      () => setMoodBurstVisible(false),
+      MOOD_BURST_MS,
+    );
+  }, []);
+
   const wakeFromAmbientInput = useCallback(() => {
     setActivityVersion((version) => version + 1);
     dispatch({ type: "wake" });
   }, []);
+
+  const handleRoomPointerDownCapture = (event: PointerEvent<HTMLDivElement>) => {
+    if (
+      event.target instanceof Element
+      && event.target.closest("[data-chat-control]")
+    ) {
+      return;
+    }
+    wakeFromAmbientInput();
+  };
 
   const startMoving = useCallback((direction: MoveDirection) => {
     const delta = MOVEMENT_DELTAS[direction];
@@ -183,8 +256,20 @@ export function PixelDogStudio() {
 
   const selectPet = (nextPetId: PetId) => {
     if (nextPetId === petId) return;
+    const nextPet = getPetById(nextPetId);
     setPetId(nextPetId);
     setAssetFailed(false);
+    if (chatOpen) {
+      setChatReply(createPetReply({
+        message: "你好",
+        pet: nextPet,
+        scene,
+        state,
+      }));
+      setChatInput("");
+      setLastUserMessage(null);
+      triggerMoodBurst();
+    }
     interact({ type: "wake" });
   };
 
@@ -223,10 +308,16 @@ export function PixelDogStudio() {
     return () => window.clearInterval(movementTimer);
   }, [reducedMotion, state]);
 
-  useEffect(
-    () => () => window.clearTimeout(pettingTimerRef.current),
-    [],
-  );
+  useEffect(() => () => {
+    window.clearTimeout(pettingTimerRef.current);
+    window.clearTimeout(moodBurstTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (chatOpen) {
+      chatInputRef.current?.focus();
+    }
+  }, [chatOpen, petId]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.repeat) return;
@@ -288,6 +379,57 @@ export function PixelDogStudio() {
       return;
     }
     interact({ type: "happy" });
+  };
+
+  const openChat = () => {
+    setChatReply(createPetReply({
+      message: "你好",
+      pet,
+      scene,
+      state,
+    }));
+    setLastUserMessage(null);
+    setChatOpen(true);
+    triggerMoodBurst();
+    interact({ type: "wake" });
+  };
+
+  const closeChat = () => {
+    chatToggleRef.current?.focus();
+    setChatOpen(false);
+  };
+
+  const submitChatMessage = () => {
+    const message = chatInput.trim();
+    if (!message) return;
+    setLastUserMessage(message);
+    setChatReply(createPetReply({
+      message,
+      pet,
+      scene,
+      state,
+    }));
+    setChatInput("");
+    triggerMoodBurst();
+    interact({ type: "wake" });
+  };
+
+  const sendChatMessage = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    submitChatMessage();
+  };
+
+  const handleChatInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    event.stopPropagation();
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeChat();
+      return;
+    }
+    if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+      event.preventDefault();
+      submitChatMessage();
+    }
   };
 
   const spriteStyle: CSSProperties = {
@@ -377,12 +519,13 @@ export function PixelDogStudio() {
       <div
         aria-label={`${pet.displayName}的${scene.displayName}`}
         className="pixel-dog-room"
+        data-chat-open={chatOpen}
         data-pet={pet.id}
         data-scene={scene.id}
         data-state={state}
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
-        onPointerDownCapture={wakeFromAmbientInput}
+        onPointerDownCapture={handleRoomPointerDownCapture}
         role="region"
         tabIndex={0}
       >
@@ -411,6 +554,29 @@ export function PixelDogStudio() {
 
             <div className="pixel-dog-scale-layer">
               <div aria-hidden="true" className="pixel-dog-shadow" />
+
+              {moodBurstVisible && (
+                <div
+                  aria-label={`${pet.displayName}的${moodPresentation.label}情绪`}
+                  className="pixel-dog-mood-burst"
+                  data-mood={chatReply.mood}
+                  key={moodBurstId}
+                  role="img"
+                >
+                  <span className="pixel-dog-mood-burst__emoticon">
+                    {moodPresentation.emoticon}
+                  </span>
+                  {moodPresentation.tokens.map((token, index) => (
+                    <span
+                      className="pixel-dog-mood-burst__token"
+                      data-token={index + 1}
+                      key={`${token}-${index}`}
+                    >
+                      {token}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {interactionProp && (
                 <div
@@ -465,6 +631,70 @@ export function PixelDogStudio() {
               </div>
             </div>
           </div>
+
+          <p
+            aria-label={`${pet.displayName}的完整回复`}
+            aria-live="polite"
+            className="pixel-dog-visually-hidden"
+          >
+            {chatOpen ? chatReply.text : ""}
+          </p>
+
+          {chatOpen && (
+            <section
+              aria-label={`和${pet.displayName}聊天`}
+              className="pixel-dog-dialogue"
+              data-chat-control=""
+              data-mood={chatReply.mood}
+            >
+              <header>
+                <strong>{pet.displayName}</strong>
+                <span>{moodPresentation.label}</span>
+                <span aria-label={`${pet.displayName}的颜文字`}>
+                  {moodPresentation.emoticon}
+                </span>
+                <button
+                  aria-label="关闭对话"
+                  onClick={closeChat}
+                  type="button"
+                >
+                  ×
+                </button>
+              </header>
+              {lastUserMessage && (
+                <p className="pixel-dog-dialogue__user">
+                  你：{lastUserMessage}
+                </p>
+              )}
+              <p
+                aria-hidden="true"
+                className="pixel-dog-dialogue__typed-reply"
+              >
+                {typedReply}
+                <span className="pixel-dog-dialogue__cursor" />
+              </p>
+              <form onSubmit={sendChatMessage}>
+                <input
+                  aria-label={`对${pet.displayName}说点什么`}
+                  maxLength={80}
+                  onChange={(event) => setChatInput(event.currentTarget.value)}
+                  onKeyDown={handleChatInputKeyDown}
+                  onKeyUp={(event) => event.stopPropagation()}
+                  placeholder="说点什么……"
+                  ref={chatInputRef}
+                  type="text"
+                  value={chatInput}
+                />
+                <button
+                  aria-label={`发送给${pet.displayName}`}
+                  disabled={!chatInput.trim()}
+                  type="submit"
+                >
+                  发送
+                </button>
+              </form>
+            </section>
+          )}
         </div>
 
         <div className="pixel-dog-controls" aria-label={`${pet.displayName}互动操作`}>
@@ -533,6 +763,15 @@ export function PixelDogStudio() {
             />
           </label>
           <div className="pixel-dog-action-controls">
+            <button
+              aria-expanded={chatOpen}
+              data-chat-control=""
+              onClick={chatOpen ? closeChat : openChat}
+              ref={chatToggleRef}
+              type="button"
+            >
+              和{pet.displayName}聊天
+            </button>
             <button onClick={() => interact({ type: "jump" })} type="button">
               跳跃
             </button>

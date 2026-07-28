@@ -3,7 +3,7 @@
 [![CI](https://github.com/cheryl1595212353-ux/pindou-pet/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/cheryl1595212353-ux/pindou-pet/actions/workflows/ci.yml)
 
 一个温暖、可操作的 2D 像素宠物空间。用户可以切换宠物和生活场景，
-通过点击、长按、方向控制与动作按钮和宠物互动。
+通过点击、长按、方向控制、动作按钮和本地文字聊天与宠物互动。
 
 当前默认首页是完全本地运行的 2D 前端体验，不需要启动 API、Redis 或
 连接外部 AI 服务。
@@ -18,6 +18,10 @@
 - 6 个独立场景：客厅、花园、海滩、雪地小屋、星光露营和城市屋顶。
 - 16 个宠物状态，包括呼吸眨眼、左右及前后移动、开心、跳跃、等待、睡眠、
   喂食、抚摸、玩球、梳毛、洗澡、跳舞和拍照。
+- 宝可梦式像素对话框支持本地文字聊天；七类关键词、当前动作和场景共同
+  生成回复，五只宠物具有不同口吻。
+- 7 种独立心情会在对话框中显示标签和颜文字，并在宠物周围短暂闪烁
+  爱心、音符、星星、问号或睡眠符号。
 - 支持鼠标、触摸和键盘输入；四个方向键可以带宠物在场景中散步。
 - 宠物大小可在 `70%–125%` 间调整，阴影随尺寸和前后景深同步变化。
 - 12 秒无操作后进入等待，30 秒无操作后睡觉，有效互动会重新唤醒宠物。
@@ -74,6 +78,7 @@ pnpm --filter @pindou/web dev --host 127.0.0.1
 | 抚摸 | 长按宠物约 240ms 或拖动 | 宠物持续享受抚摸，松开后恢复空闲 |
 | 散步 | 按住四向按钮或键盘方向键 | 宠物左右移动，也可向前靠近或向后深入场景 |
 | 调整大小 | 拖动“宠物大小”滑块 | 在 `70%–125%` 间调整宠物、阴影和道具 |
+| 本地聊天 | 点击“和宠物聊天”，输入文字并发送 | 宠物按关键词、动作和场景回复，同时显示心情与像素符号 |
 | 丰富互动 | 点击跳跃、喂食、玩球、梳毛、洗澡、跳舞或拍照 | 播放对应动作并显示状态或道具 |
 | 叫醒 | 点击叫醒按钮或产生有效输入 | 从等待或睡眠状态回到呼吸眨眼 |
 
@@ -93,6 +98,10 @@ pnpm --filter @pindou/web dev --host 127.0.0.1
 每只宠物使用相同的精灵图合同：单帧为 `192×208`，每行最多 8 帧，
 共 9 行动画。16 个产品状态由 reducer 状态机映射到这些动画行，
 一次性动作结束后自动回到呼吸眨眼状态。
+
+聊天由独立的本地规则模型处理，支持问候、食物、玩耍、夸奖、睡觉、
+心情和场景七类意图以及未匹配回退。聊天不调用后端或外部大模型，
+心情状态也不占用新的精灵图动画行。
 
 ### 仓库基础设施
 
@@ -130,6 +139,7 @@ pnpm --filter @pindou/web dev --host 127.0.0.1
 主要入口：
 
 - [`PixelDogStudio.tsx`](apps/web/src/app/pixel-dog/PixelDogStudio.tsx)
+- [`petChatModel.ts`](apps/web/src/app/pixel-dog/petChatModel.ts)
 - [`pixelDogModel.ts`](apps/web/src/app/pixel-dog/pixelDogModel.ts)
 - [`petCatalog.ts`](apps/web/src/app/pixel-dog/petCatalog.ts)
 - [`sceneCatalog.ts`](apps/web/src/app/pixel-dog/sceneCatalog.ts)
@@ -209,7 +219,10 @@ PYTHONPATH=apps/api/src \
 
 - [多宠物 2D 互动前端设计与功能说明](docs/product/multi-pet-frontend-design-features.md)
 - [多宠物 2D 互动像素宠物功能规格](docs/product/interactive-pixel-dog-feature-spec.md)
+- [本地聊天与情绪反馈设计](docs/superpowers/specs/2026-07-28-pixel-pet-chat-emotions-design.md)
+- [本地聊天与情绪反馈实施计划](docs/superpowers/plans/2026-07-28-pixel-pet-chat-emotions.md)
 - [多宠物场景与互动验收数据](docs/qa/multi-pet-scenes-interactions-qa.json)
+- [本地聊天与情绪反馈验收数据](docs/qa/pixel-pet-chat-emotions-qa.json)
 - [前端视觉优化 Prompt](docs/prompts/frontend-visual-optimization-prompt.md)
 
 ## 许可证

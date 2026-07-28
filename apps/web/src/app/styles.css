@@ -817,6 +817,235 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   transform: translate(-50%, -50%);
 }
 
+.pixel-dog-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.pixel-dog-mood-burst {
+  --mood-color: #e85b3f;
+  position: absolute;
+  inset: -26px -24px 0;
+  z-index: 6;
+  color: var(--mood-color);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-weight: 900;
+  pointer-events: none;
+  text-shadow: 2px 2px 0 #251f1a, -1px -1px 0 #fff8e7;
+}
+
+.pixel-dog-mood-burst[data-mood="calm"] { --mood-color: #d7eadf; }
+.pixel-dog-mood-burst[data-mood="happy"] { --mood-color: #f36b73; }
+.pixel-dog-mood-burst[data-mood="excited"] { --mood-color: #f2ca52; }
+.pixel-dog-mood-burst[data-mood="curious"] { --mood-color: #76c5c5; }
+.pixel-dog-mood-burst[data-mood="shy"] { --mood-color: #f2a7be; }
+.pixel-dog-mood-burst[data-mood="sleepy"] { --mood-color: #b6b1df; }
+.pixel-dog-mood-burst[data-mood="content"] { --mood-color: #efbb63; }
+
+.pixel-dog-mood-burst__emoticon {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  padding: 5px 8px;
+  color: #251f1a;
+  border: 2px solid #251f1a;
+  background: #fff8e7;
+  box-shadow: 3px 3px 0 rgb(37 31 26 / 34%);
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+  animation: pixel-mood-emoticon 620ms steps(4, end) 2 alternate;
+  transform: translateX(-50%);
+}
+
+.pixel-dog-mood-burst__token {
+  position: absolute;
+  font-size: 22px;
+  line-height: 1;
+  animation: pixel-mood-token 720ms steps(4, end) 3 both;
+}
+
+.pixel-dog-mood-burst__token[data-token="1"] {
+  top: 42px;
+  left: 8px;
+}
+
+.pixel-dog-mood-burst__token[data-token="2"] {
+  top: 22px;
+  right: 2px;
+  animation-delay: 120ms;
+}
+
+.pixel-dog-mood-burst__token[data-token="3"] {
+  top: 92px;
+  right: 18px;
+  animation-delay: 240ms;
+}
+
+.pixel-dog-dialogue {
+  --mood-color: #e85b3f;
+  position: absolute;
+  right: clamp(8px, 1.4vw, 18px);
+  bottom: clamp(8px, 1.4vw, 18px);
+  left: clamp(8px, 1.4vw, 18px);
+  z-index: 12;
+  min-height: 154px;
+  padding: 12px 14px 13px;
+  color: #27211b;
+  border: 4px solid #fff8e7;
+  outline: 3px solid #251f1a;
+  background:
+    linear-gradient(90deg, var(--mood-color) 0 8px, transparent 8px) 0 0 / 100% 100%,
+    #f7eedb;
+  box-shadow:
+    inset 0 0 0 2px #9a8061,
+    6px 7px 0 rgb(20 13 8 / 42%);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  animation: pixel-dialogue-enter 180ms steps(4, end) both;
+}
+
+.pixel-dog-dialogue[data-mood="calm"] { --mood-color: #8dbca6; }
+.pixel-dog-dialogue[data-mood="happy"] { --mood-color: #dc5965; }
+.pixel-dog-dialogue[data-mood="excited"] { --mood-color: #d8a82f; }
+.pixel-dog-dialogue[data-mood="curious"] { --mood-color: #4e9ca0; }
+.pixel-dog-dialogue[data-mood="shy"] { --mood-color: #dc83a0; }
+.pixel-dog-dialogue[data-mood="sleepy"] { --mood-color: #817bb0; }
+.pixel-dog-dialogue[data-mood="content"] { --mood-color: #ca8841; }
+
+.pixel-dog-dialogue header {
+  display: flex;
+  min-height: 28px;
+  padding-left: 6px;
+  align-items: center;
+  gap: 8px;
+}
+
+.pixel-dog-dialogue header strong {
+  color: #fffaf1;
+  background: #251f1a;
+  box-shadow: 3px 3px 0 var(--mood-color);
+  padding: 4px 8px;
+  font-size: 12px;
+  letter-spacing: .08em;
+}
+
+.pixel-dog-dialogue header span {
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.pixel-dog-dialogue header span:nth-of-type(1) {
+  color: var(--mood-color);
+}
+
+.pixel-dog-dialogue header span:nth-of-type(2) {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.pixel-dog-dialogue header button {
+  display: grid;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: #fffaf1;
+  border: 2px solid #251f1a;
+  background: #3d332a;
+  box-shadow: 2px 2px 0 var(--mood-color);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  place-items: center;
+}
+
+.pixel-dog-dialogue__user {
+  margin: 7px 4px 0 7px;
+  overflow: hidden;
+  color: #786756;
+  font-size: 10px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pixel-dog-dialogue__typed-reply {
+  min-height: 35px;
+  margin: 6px 4px 8px 7px;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.pixel-dog-dialogue__cursor {
+  display: inline-block;
+  width: 7px;
+  height: 11px;
+  margin-left: 3px;
+  vertical-align: -1px;
+  background: var(--mood-color);
+  animation: pixel-dialogue-cursor 620ms steps(2, end) infinite;
+}
+
+.pixel-dog-dialogue form {
+  display: grid;
+  margin-left: 6px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+.pixel-dog-dialogue input {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 11px;
+  color: #251f1a;
+  border: 2px solid #251f1a;
+  border-radius: 0;
+  outline: 0;
+  background: #fffdf6;
+  box-shadow: inset 3px 3px 0 rgb(37 31 26 / 10%);
+  font: inherit;
+  font-size: 12px;
+}
+
+.pixel-dog-dialogue input:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--mood-color);
+}
+
+.pixel-dog-dialogue form button {
+  min-width: 68px;
+  min-height: 44px;
+  padding: 0 14px;
+  color: #fffaf1;
+  border: 2px solid #251f1a;
+  background: #2b8e73;
+  box-shadow: 3px 3px 0 #251f1a;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.pixel-dog-dialogue button:focus-visible {
+  outline: 3px solid #fff8e7;
+  outline-offset: 2px;
+}
+
+.pixel-dog-dialogue form button:disabled {
+  color: #776b5f;
+  background: #c9bcaa;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
 .pixel-dog-controls {
   display: flex;
   min-width: 0;
@@ -1030,6 +1259,27 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   100% { opacity: 0; transform: translateX(26px) scale(1); }
 }
 
+@keyframes pixel-dialogue-enter {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pixel-dialogue-cursor {
+  0%, 45% { opacity: 1; }
+  46%, 100% { opacity: 0; }
+}
+
+@keyframes pixel-mood-emoticon {
+  from { opacity: .55; transform: translate(-50%, 7px) scale(.92); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+@keyframes pixel-mood-token {
+  0% { opacity: 0; transform: translateY(8px) scale(.72); }
+  28%, 72% { opacity: 1; transform: translateY(-5px) scale(1); }
+  100% { opacity: 0; transform: translateY(-18px) scale(.82); }
+}
+
 @media (max-width: 800px) {
   .phase-label { display: none; }
   .studio { grid-template-columns: 1fr; }
@@ -1073,6 +1323,9 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
     grid-template-rows: auto minmax(320px, 50svh) auto;
     gap: 8px;
   }
+  .pixel-dog-room[data-chat-open="true"] {
+    grid-template-rows: auto minmax(470px, 60svh) auto;
+  }
   .pixel-dog-room:focus-visible {
     box-shadow: 6px 7px 0 rgb(37 31 26 / 22%), inset 0 0 0 4px #2b8e73;
   }
@@ -1089,6 +1342,25 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
     bottom: 246px;
     max-width: 190px;
     font-size: 11px;
+  }
+  .pixel-dog-dialogue {
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    min-height: 148px;
+    padding: 9px 9px 10px;
+  }
+  .pixel-dog-dialogue header { gap: 6px; }
+  .pixel-dog-dialogue header strong { font-size: 11px; }
+  .pixel-dog-dialogue header span { font-size: 10px; }
+  .pixel-dog-dialogue__typed-reply {
+    min-height: 34px;
+    margin-top: 4px;
+    font-size: 11px;
+  }
+  .pixel-dog-dialogue form button {
+    min-width: 58px;
+    padding: 0 9px;
   }
   .pixel-dog-controls { gap: 8px; padding-top: 10px; }
   .pixel-dog-action-controls {
@@ -1129,5 +1401,9 @@ h1 { margin: 0; font-size: clamp(42px, 4vw, 56px); font-weight: 950; letter-spac
   .pixel-dog-ambient::before,
   .pixel-dog-ambient::after,
   .pixel-dog-prop,
-  .pixel-dog-prop span { animation: none !important; }
+  .pixel-dog-prop span,
+  .pixel-dog-dialogue,
+  .pixel-dog-dialogue__cursor,
+  .pixel-dog-mood-burst__emoticon,
+  .pixel-dog-mood-burst__token { animation: none !important; }
 }

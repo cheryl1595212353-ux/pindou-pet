@@ -10,8 +10,10 @@
 
 - 当前默认产品是一个本地运行的 **2D 互动像素宠物前端**。
 - 首页路由 `/` 直接渲染 `PixelDogStudio`，不需要 API、Redis 或外部 AI。
-- 当前固定规模为 **5 只宠物、6 个场景、16 个状态**。
-- 当前产品重点是宠物切换、场景切换、精灵图动画和鼠标、触摸、键盘互动。
+- 当前固定规模为 **5 只宠物、6 个场景、16 个动作状态、7 种心情**。
+- 当前产品重点是宠物切换、场景切换、精灵图动画、本地聊天和鼠标、触摸、
+  键盘互动。
+- 当前聊天完全由本地关键词规则生成，不调用外部 AI。
 - 当前产品不包含照片上传、自动生成宠物、3D、体素、OBJ、WebGL、AR、
   账号、云端保存、商城或可用的导出流程。
 - `apps/web/src/app/voxel/` 和 `experiments/` 中包含历史实验代码，但它们
@@ -39,11 +41,12 @@ pnpm --filter @pindou/web dev --host 127.0.0.1
 3. `docs/product/interactive-pixel-dog-feature-spec.md`
 4. `docs/product/multi-pet-frontend-design-features.md`
 5. `apps/web/src/app/pixel-dog/PixelDogStudio.tsx`
-6. `apps/web/src/app/pixel-dog/pixelDogModel.ts`
-7. `apps/web/src/app/pixel-dog/petCatalog.ts`
-8. `apps/web/src/app/pixel-dog/sceneCatalog.ts`
-9. 同目录测试和 `apps/web/src/app/App.test.tsx`
-10. 与当前任务直接相关的 API、合同或历史文件
+6. `apps/web/src/app/pixel-dog/petChatModel.ts`
+7. `apps/web/src/app/pixel-dog/pixelDogModel.ts`
+8. `apps/web/src/app/pixel-dog/petCatalog.ts`
+9. `apps/web/src/app/pixel-dog/sceneCatalog.ts`
+10. 同目录测试和 `apps/web/src/app/App.test.tsx`
+11. 与当前任务直接相关的 API、合同或历史文件
 
 事实层级：
 
@@ -57,7 +60,7 @@ pnpm --filter @pindou/web dev --host 127.0.0.1
 
 | 路径 | 作用 | 修改时机 |
 | --- | --- | --- |
-| `apps/web/src/app/pixel-dog/` | 当前 2D 宠物页面、状态机和目录 | 互动、宠物、场景或状态修改 |
+| `apps/web/src/app/pixel-dog/` | 当前 2D 宠物页面、状态机、聊天模型和目录 | 互动、聊天、宠物、场景或状态修改 |
 | `apps/web/public/pixel-dog/` | 宠物基础图、精灵图、manifest 和场景图 | 明确要求修改视觉资源时 |
 | `apps/web/src/app/styles.css` | 当前页面和历史页面的共享样式 | 前端布局与视觉修改 |
 | `apps/web/src/app/router.tsx` | 路由和产品外壳 | 路由边界或入口修改 |
@@ -78,6 +81,7 @@ pnpm --filter @pindou/web dev --host 127.0.0.1
 - 新增宠物：`petCatalog.ts`、宠物资源目录、manifest、资源测试。
 - 新增场景：`sceneCatalog.ts`、场景资源、目录测试。
 - 新增互动：`pixelDogModel.ts`、`PixelDogStudio.tsx`、样式和状态机测试。
+- 修改聊天：`petChatModel.ts`、`PixelDogStudio.tsx`、样式和对应测试。
 - API 修改：`apps/api/`、OpenAPI 快照、生成合同和迁移。
 
 ## 4. 不得静默破坏的产品合同
@@ -129,6 +133,17 @@ moving-backward
 - 一次性动作完成后返回 `idle`。
 - 新的有效输入可以唤醒宠物并重新计算等待时间。
 
+聊天心情独立于上述动作状态，定义在 `petChatModel.ts`：
+
+```text
+calm  happy  excited  curious  shy  sleepy  content
+```
+
+- 聊天只使用本地关键词规则，不得静默加入外部模型或网络请求。
+- 输入框中的方向键只移动文本光标，不得触发宠物移动。
+- 发送消息会唤醒宠物并重置等待时间。
+- 关闭或刷新页面后不保留聊天内容。
+
 ### 精灵图与资源
 
 - 宠物基础图为 `128×128` PNG。
@@ -149,6 +164,7 @@ moving-backward
 - 带可访问名称和当前百分比的原生尺寸滑块。
 - 原生焦点顺序和清晰焦点样式。
 - 状态与场景的可访问播报。
+- 可打开和关闭的聊天区、带名称的文本输入、发送按钮及完整回复播报。
 - 图集加载错误提示。
 - `prefers-reduced-motion: reduce` 下可用的静态或简化体验。
 
@@ -273,6 +289,7 @@ make redis-smoke
 - 宠物在前后边界和尺寸极值时仍在舞台内，阴影同步变化。
 - 食盆位于嘴部下方，玩具球位于头部前方。
 - 场景切换和全部互动有正确视觉反馈。
+- 对话框不遮住宠物主体，颜文字和情绪符号跟随宠物且不拦截输入。
 - 键盘焦点、状态播报和减少动态模式仍然可用。
 - 浏览器控制台没有相关 error 或 warning。
 

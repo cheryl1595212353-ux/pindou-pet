@@ -25,6 +25,189 @@ describe("PixelDogStudio", () => {
     expect(screen.getByRole("status")).toHaveTextContent("豆包正在呼吸和眨眼");
   });
 
+  it("opens and closes a classic pet dialogue", () => {
+    render(<PixelDogStudio />);
+
+    expect(screen.queryByRole("region", { name: "和豆包聊天" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByLabelText("豆包的完整回复")).toBeEmptyDOMElement();
+
+    fireEvent.click(screen.getByRole("button", { name: "和豆包聊天" }));
+
+    expect(screen.getByRole("region", { name: "和豆包聊天" })).toBeVisible();
+    expect(screen.getByText("开心")).toBeVisible();
+    expect(screen.getByLabelText("豆包的颜文字")).toHaveTextContent("(ᵔᴥᵔ)");
+    expect(screen.getByLabelText("豆包的完整回复")).not.toBeEmptyDOMElement();
+
+    fireEvent.click(screen.getByRole("button", { name: "关闭对话" }));
+
+    expect(screen.queryByRole("region", { name: "和豆包聊天" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByLabelText("豆包的完整回复")).toBeEmptyDOMElement();
+  });
+
+  it("sends a local message and shows the pet's new mood", () => {
+    render(<PixelDogStudio />);
+    fireEvent.click(screen.getByRole("button", { name: "和豆包聊天" }));
+
+    const input = screen.getByRole("textbox", { name: "对豆包说点什么" });
+    const send = screen.getByRole("button", { name: "发送给豆包" });
+    expect(send).toBeDisabled();
+
+    fireEvent.change(input, { target: { value: "我们一起玩球吧" } });
+    expect(send).toBeEnabled();
+    fireEvent.click(send);
+
+    expect(screen.getByText("你：我们一起玩球吧")).toBeVisible();
+    expect(screen.getByLabelText("豆包的完整回复")).toHaveTextContent("一起玩");
+    expect(screen.getByText("兴奋")).toBeVisible();
+    expect(screen.getByLabelText("豆包的颜文字")).toHaveTextContent("٩(ˊᗜˋ*)و");
+    expect(input).toHaveValue("");
+  });
+
+  it("keeps chat keyboard controls separate from pet movement", () => {
+    render(<PixelDogStudio />);
+    const chatToggle = screen.getByRole("button", { name: "和豆包聊天" });
+    fireEvent.click(chatToggle);
+
+    const input = screen.getByRole("textbox", { name: "对豆包说点什么" });
+    expect(input).toHaveFocus();
+
+    fireEvent.change(input, { target: { value: "你好" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(screen.getByText("你：你好")).toBeVisible();
+
+    fireEvent.change(input, { target: { value: "还没发出的消息" } });
+    fireEvent.keyDown(input, { key: "ArrowRight" });
+    expect(screen.getByText("X 50 · Y 50")).toBeVisible();
+    expect(screen.getByRole("status")).toHaveTextContent("豆包正在呼吸和眨眼");
+
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(screen.queryByRole("region", { name: "和豆包聊天" }))
+      .not.toBeInTheDocument();
+    expect(chatToggle).toHaveFocus();
+  });
+
+  it("welcomes the newly selected pet without closing chat", () => {
+    render(<PixelDogStudio />);
+    fireEvent.click(screen.getByRole("button", { name: "和豆包聊天" }));
+    fireEvent.click(screen.getByRole("button", { name: "选择宠物：雪团·比熊" }));
+
+    expect(screen.getByRole("region", { name: "和雪团聊天" })).toBeVisible();
+    expect(screen.getByLabelText("雪团的完整回复")).toHaveTextContent("雪团");
+    expect(screen.getByLabelText("雪团的完整回复")).not.toHaveTextContent("豆包");
+    expect(screen.getByRole("textbox", { name: "对雪团说点什么" })).toHaveFocus();
+  });
+
+  it("briefly flashes the current emotion around the pet after a reply", () => {
+    render(<PixelDogStudio />);
+    fireEvent.click(screen.getByRole("button", { name: "和豆包聊天" }));
+    const input = screen.getByRole("textbox", { name: "对豆包说点什么" });
+    fireEvent.change(input, { target: { value: "我们玩游戏吧" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    const burst = screen.getByRole("img", { name: "豆包的兴奋情绪" });
+    expect(burst).toHaveAttribute("data-mood", "excited");
+    expect(burst).toHaveTextContent("✦");
+    expect(burst).toHaveTextContent("٩(ˊᗜˋ*)و");
+
+    act(() => {
+      vi.advanceTimersByTime(3_200);
+    });
+    expect(screen.queryByRole("img", { name: "豆包的兴奋情绪" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("reveals the visual pet reply with a readable typewriter cadence", () => {
+    const { container } = render(<PixelDogStudio />);
+    fireEvent.click(screen.getByRole("button", { name: "和豆包聊天" }));
+
+    const fullReply = screen.getByLabelText("豆包的完整回复").textContent ?? "";
+    const typedReply = container.querySelector<HTMLElement>(
+      ".pixel-dog-dialogue__typed-reply",
+    );
+    expect(fullReply.length).toBeGreaterThan(10);
+    expect(typedReply).toHaveTextContent("");
+
+    act(() => {
+      vi.advanceTimersByTime(140);
+    });
+    expect(typedReply?.textContent?.length).toBeGreaterThan(0);
+    expect(typedReply?.textContent?.length).toBeLessThan(fullReply.length);
+
+    act(() => {
+      vi.advanceTimersByTime(4_000);
+    });
+    expect(typedReply).toHaveTextContent(fullReply);
+  });
+
+  it("remembers that a sleeping pet was awakened by opening chat", () => {
+    render(<PixelDogStudio />);
+    act(() => {
+      vi.advanceTimersByTime(SLEEPING_AFTER_MS);
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("豆包睡着了");
+
+    const chatToggle = screen.getByRole("button", { name: "和豆包聊天" });
+    fireEvent.pointerDown(chatToggle);
+    fireEvent.click(chatToggle);
+
+    expect(screen.getByLabelText("豆包的完整回复")).toHaveTextContent("叫醒");
+    expect(screen.getByRole("status")).toHaveTextContent("豆包正在呼吸和眨眼");
+  });
+
+  it("grounds chat in the room without resetting scene, position, or size", () => {
+    render(<PixelDogStudio />);
+    fireEvent.click(screen.getByRole("button", { name: "切换场景：星光露营" }));
+    fireEvent.change(screen.getByRole("slider", { name: "宠物大小" }), {
+      target: { value: "115" },
+    });
+    const moveRight = screen.getByRole("button", { name: "向右移动" });
+    fireEvent.pointerDown(moveRight);
+    act(() => {
+      vi.advanceTimersByTime(90);
+    });
+    fireEvent.pointerUp(moveRight);
+    expect(screen.getByText("X 54 · Y 50")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "喂食" }));
+    fireEvent.click(screen.getByRole("button", { name: "和豆包聊天" }));
+    expect(screen.getByLabelText("豆包的完整回复")).toHaveTextContent("吃饭");
+    const input = screen.getByRole("textbox", { name: "对豆包说点什么" });
+    fireEvent.change(input, { target: { value: "你喜欢这里吗" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(screen.getByLabelText("豆包的完整回复")).toHaveTextContent("星光露营");
+    expect(screen.getByRole("region", { name: "豆包的星光露营" })).toBeVisible();
+    expect(screen.getByRole("slider", { name: "宠物大小" })).toHaveValue("115");
+    expect(screen.getByText("X 54 · Y 50")).toBeVisible();
+  });
+
+  it("shows the complete reply immediately when reduced motion is requested", () => {
+    const originalMatchMedia = Object.getOwnPropertyDescriptor(window, "matchMedia");
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn().mockReturnValue({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    });
+
+    const view = render(<PixelDogStudio />);
+    fireEvent.click(screen.getByRole("button", { name: "和豆包聊天" }));
+    const fullReply = screen.getByLabelText("豆包的完整回复").textContent ?? "";
+    expect(view.container.querySelector(".pixel-dog-dialogue__typed-reply"))
+      .toHaveTextContent(fullReply);
+    view.unmount();
+
+    if (originalMatchMedia) {
+      Object.defineProperty(window, "matchMedia", originalMatchMedia);
+    } else {
+      Reflect.deleteProperty(window, "matchMedia");
+    }
+  });
+
   it("switches between all five pets using accessible selectors", () => {
     render(<PixelDogStudio />);
 
