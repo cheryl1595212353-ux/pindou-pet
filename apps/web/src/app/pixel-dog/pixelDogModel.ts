@@ -7,11 +7,22 @@ export const WAITING_AFTER_MS = 12_000;
 export const SLEEPING_AFTER_MS = 30_000;
 export const MIN_STAGE_POSITION = 8;
 export const MAX_STAGE_POSITION = 92;
+export const MIN_STAGE_DEPTH = 20;
+export const MAX_STAGE_DEPTH = 80;
+
+export interface StagePosition {
+  readonly x: number;
+  readonly y: number;
+}
+
+export type MoveDirection = "left" | "right" | "forward" | "backward";
 
 export type PixelDogState =
   | "idle"
   | "moving-right"
   | "moving-left"
+  | "moving-forward"
+  | "moving-backward"
   | "happy"
   | "jumping"
   | "sleeping"
@@ -57,14 +68,14 @@ export const DOG_CLIPS: Readonly<Record<PixelDogState, DogClip>> = {
   happy: {
     row: 3,
     frameCount: 4,
-    durations: [140, 140, 140, 280],
+    durations: [203, 203, 203, 406],
     loop: false,
     status: "很开心",
   },
   jumping: {
     row: 4,
     frameCount: 5,
-    durations: [140, 140, 140, 140, 280],
+    durations: [203, 203, 203, 203, 406],
     loop: false,
     status: "跳起来了",
   },
@@ -85,7 +96,7 @@ export const DOG_CLIPS: Readonly<Record<PixelDogState, DogClip>> = {
   feeding: {
     row: 7,
     frameCount: 6,
-    durations: [120, 120, 120, 120, 120, 220],
+    durations: [174, 174, 174, 174, 174, 319],
     loop: false,
     status: "正在吃饭",
   },
@@ -99,42 +110,56 @@ export const DOG_CLIPS: Readonly<Record<PixelDogState, DogClip>> = {
   "playing-ball": {
     row: 4,
     frameCount: 5,
-    durations: [140, 140, 140, 140, 280],
+    durations: [203, 203, 203, 203, 406],
     loop: false,
     status: "正在玩球",
   },
   grooming: {
     row: 8,
     frameCount: 6,
-    durations: [150, 150, 150, 150, 150, 280],
+    durations: [218, 218, 218, 218, 218, 406],
     loop: false,
     status: "正在梳毛",
   },
   bathing: {
     row: 6,
     frameCount: 6,
-    durations: [150, 150, 150, 150, 150, 260],
+    durations: [218, 218, 218, 218, 218, 377],
     loop: false,
     status: "正在洗澡",
   },
   dancing: {
     row: 3,
     frameCount: 4,
-    durations: [140, 140, 140, 280],
+    durations: [203, 203, 203, 406],
     loop: false,
     status: "正在跳舞",
   },
   posing: {
     row: 3,
     frameCount: 4,
-    durations: [140, 140, 140, 280],
+    durations: [203, 203, 203, 406],
     loop: false,
     status: "正在摆姿势拍照",
+  },
+  "moving-forward": {
+    row: 0,
+    frameCount: 6,
+    durations: [180, 110, 110, 160, 160, 220],
+    loop: true,
+    status: "正在向前走",
+  },
+  "moving-backward": {
+    row: 0,
+    frameCount: 6,
+    durations: [180, 110, 110, 160, 160, 220],
+    loop: true,
+    status: "正在向后走",
   },
 };
 
 export type DogEvent =
-  | { readonly type: "move"; readonly direction: "left" | "right" }
+  | { readonly type: "move"; readonly direction: MoveDirection }
   | { readonly type: "stop" }
   | { readonly type: "happy" }
   | { readonly type: "jump" }
@@ -162,12 +187,19 @@ const ONE_SHOT_STATES = new Set<PixelDogState>([
   "posing",
 ]);
 
+const MOVING_STATES = new Set<PixelDogState>([
+  "moving-left",
+  "moving-right",
+  "moving-forward",
+  "moving-backward",
+]);
+
 export function dogReducer(state: PixelDogState, event: DogEvent): PixelDogState {
   switch (event.type) {
     case "move":
-      return event.direction === "left" ? "moving-left" : "moving-right";
+      return `moving-${event.direction}` as PixelDogState;
     case "stop":
-      return state === "moving-left" || state === "moving-right" ? "idle" : state;
+      return MOVING_STATES.has(state) ? "idle" : state;
     case "happy":
       return "happy";
     case "jump":
@@ -199,10 +231,26 @@ export function dogReducer(state: PixelDogState, event: DogEvent): PixelDogState
   }
 }
 
-export function clampStagePosition(value: number): number {
-  return Math.min(MAX_STAGE_POSITION, Math.max(MIN_STAGE_POSITION, value));
+export function clampStagePosition(position: StagePosition): StagePosition {
+  return {
+    x: Math.min(
+      MAX_STAGE_POSITION,
+      Math.max(MIN_STAGE_POSITION, position.x),
+    ),
+    y: Math.min(MAX_STAGE_DEPTH, Math.max(MIN_STAGE_DEPTH, position.y)),
+  };
+}
+
+export function getDepthScale(stageDepth: number): number {
+  const clampedDepth = Math.min(
+    MAX_STAGE_DEPTH,
+    Math.max(MIN_STAGE_DEPTH, stageDepth),
+  );
+  const progress = (clampedDepth - MIN_STAGE_DEPTH)
+    / (MAX_STAGE_DEPTH - MIN_STAGE_DEPTH);
+  return 0.9 + progress * 0.18;
 }
 
 export function getPropSide(stagePosition: number): "left" | "right" {
-  return stagePosition > 70 ? "left" : "right";
+  return stagePosition < 30 ? "right" : "left";
 }

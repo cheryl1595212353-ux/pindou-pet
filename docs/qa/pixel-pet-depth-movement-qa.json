@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "date": "2026-07-28",
+  "timezone": "Asia/Shanghai",
+  "branch": "codex/interactive-pixel-dog",
+  "testedBaseHead": "9988b39699ede1b522e5fa7047f8995c54ab4062",
+  "workingTreeHasUncommittedChanges": true,
+  "testedUrl": "http://127.0.0.1:5173/",
+  "browserSurface": "Codex In-app Browser",
+  "implementation": {
+    "movementDirections": ["left", "right", "forward", "backward"],
+    "initialPosition": {"x": 50, "y": 50},
+    "horizontalBounds": {"min": 8, "max": 92},
+    "depthBounds": {"min": 20, "max": 80},
+    "moveStep": 1.25,
+    "moveIntervalMs": 45,
+    "sizeControl": {"minPercent": 70, "maxPercent": 125, "stepPercent": 5, "defaultPercent": 100},
+    "depthScale": {"back": 0.9, "middle": 0.99, "front": 1.08},
+    "oneShotDurationMultiplier": 1.45
+  },
+  "automaticVerification": {
+    "testCommand": "pnpm --filter @pindou/web test",
+    "testFiles": 23,
+    "tests": 99,
+    "testResult": "PASS",
+    "typecheckCommand": "pnpm --filter @pindou/web typecheck",
+    "typecheckResult": "PASS",
+    "buildCommand": "pnpm --filter @pindou/web build",
+    "buildResult": "PASS"
+  },
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900,
+      "documentHorizontalOverflowPx": 0,
+      "bodyHeight": 900,
+      "scene": {"width": 1028, "height": 622, "left": 374, "right": 1402, "top": 124, "bottom": 746},
+      "controls": {"height": 106, "top": 756, "bottom": 862}
+    },
+    {
+      "name": "intermediate",
+      "width": 578,
+      "height": 863,
+      "documentHorizontalOverflowPx": 0,
+      "bodyHeight": 1156,
+      "scene": {"width": 534, "height": 431.5, "left": 22, "right": 556, "top": 418.890625, "bottom": 850.390625},
+      "controls": {"height": 275, "top": 858.390625, "bottom": 1133.390625},
+      "minimumControlButtonHeight": 44,
+      "statusRoleCount": 1
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844,
+      "documentHorizontalOverflowPx": 0,
+      "bodyHeight": 1142,
+      "scene": {"width": 346, "height": 422, "left": 22, "right": 368, "top": 413.59375, "bottom": 835.59375},
+      "controls": {"height": 275, "top": 843.59375, "bottom": 1118.59375},
+      "minimumControlButtonHeight": 44,
+      "statusRoleCount": 1
+    }
+  ],
+  "sizeAndShadow": {
+    "mobile390At70Percent": {
+      "outerScale": 0.693,
+      "sprite": {"width": 149.022705078125, "height": 161.4412841796875},
+      "shadow": {"width": 114.87168884277344, "height": 15.523193359375},
+      "insideScene": true,
+      "horizontalOverflowPx": 0
+    },
+    "mobile390At125Percent": {
+      "outerScale": 1.2375,
+      "sprite": {"width": 266.11199951171875, "height": 288.2879943847656},
+      "shadow": {"width": 205.12799072265625, "height": 27.720001220703125},
+      "edgeTolerancePx": 0.01,
+      "leftBoundary": {"stageX": 8, "spriteLeft": 21.998687744140625, "sceneLeft": 22},
+      "rightBoundary": {"stageX": 92, "spriteRight": 367.9934997558594, "sceneRight": 368},
+      "frontRightBoundary": {
+        "stage": {"x": 92, "y": 80},
+        "outerScale": 1.35,
+        "sprite": {"width": 290.30401611328125, "height": 314.49603271484375, "right": 367.9957580566406, "bottom": 512.09375},
+        "scene": {"right": 368, "bottom": 538.09375},
+        "insideScene": true
+      },
+      "horizontalOverflowPx": 0
+    },
+    "desktopDepthChangeAt100Percent": {
+      "back": {
+        "stageY": 20,
+        "outerScale": 0.9,
+        "sprite": {"width": 267.83990478515625, "height": 290.1600036621094},
+        "shadow": {"width": 206.4599609375, "height": 27.89996337890625}
+      },
+      "front": {
+        "stageY": 80,
+        "outerScale": 1.08,
+        "sprite": {"width": 321.407958984375, "height": 348.1920166015625},
+        "shadow": {"width": 247.751953125, "height": 33.47998046875}
+      }
+    }
+  },
+  "propAnchors": [
+    {"petId": "doubao", "bowl": {"x": 78, "y": 168}, "ball": {"x": 170, "y": 92}, "shadowWidth": 148},
+    {"petId": "jinbao", "bowl": {"x": 80, "y": 168}, "ball": {"x": 172, "y": 94}, "shadowWidth": 164},
+    {"petId": "xuetuan", "bowl": {"x": 88, "y": 168}, "ball": {"x": 168, "y": 90}, "shadowWidth": 132},
+    {"petId": "keke", "bowl": {"x": 86, "y": 168}, "ball": {"x": 168, "y": 92}, "shadowWidth": 138},
+    {"petId": "jutuan", "bowl": {"x": 82, "y": 170}, "ball": {"x": 170, "y": 96}, "shadowWidth": 152}
+  ],
+  "propVisualReview": {
+    "petsReviewed": ["doubao", "jinbao", "xuetuan", "keke", "jutuan"],
+    "bowlBelowMouthForEveryPet": true,
+    "ballInFrontOfHeadForEveryPet": true,
+    "leftBoundaryMirrorsPetAndBallTogether": true,
+    "mobile390MaxSizeFrontRightBowlInsideScene": true,
+    "mobile390MaxSizeFrontRightBallInsideScene": true
+  },
+  "animationTiming": {
+    "interaction": "feeding",
+    "statusAt900Ms": "橘团正在吃饭",
+    "statusAt1300Ms": "橘团正在呼吸和眨眼",
+    "result": "PASS"
+  },
+  "accessibility": {
+    "directionButtonLabels": ["向左移动", "向右移动", "向前移动", "向后移动"],
+    "sizeSliderLabel": "宠物大小",
+    "statusRoleCount": 1,
+    "keyboardArrowDownChangedPosition": {"from": {"x": 50, "y": 50}, "toRounded": {"x": 50, "y": 51}},
+    "minimumTouchTargetHeight": 44,
+    "result": "PASS"
+  },
+  "console": {
+    "warnings": [],
+    "errors": [],
+    "result": "PASS"
+  }
+}

@@ -37,6 +37,9 @@ describe("product shell", () => {
     expect(screen.getByRole("button", { name: "叫醒豆包" })).toBeVisible();
     expect(screen.getByRole("button", { name: "向左移动" })).toBeVisible();
     expect(screen.getByRole("button", { name: "向右移动" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "向前移动" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "向后移动" })).toBeVisible();
+    expect(screen.getByRole("slider", { name: "宠物大小" })).toHaveValue("100");
   });
 
   it("provides the four approved route boundaries", () => {
