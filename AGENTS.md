@@ -9,9 +9,13 @@
 ## 1. 60 秒项目定位
 
 - 当前默认产品是一个本地运行的 **2D 互动像素宠物前端**。
-- 首页路由 `/` 直接渲染 `PixelDogStudio`，不需要 API、Redis 或外部 AI。
-- 当前固定规模为 **5 只宠物、6 个场景、16 个状态**。
-- 当前产品重点是宠物切换、场景切换、精灵图动画和鼠标、触摸、键盘互动。
+- 首页路由 `/` 直接渲染 `PixelDogStudio`，不需要仓库 API 或 Redis；
+  DeepSeek 对话是可选能力，未配置时自动回退本地回复。
+- 当前固定规模为 **5 只宠物、6 个场景、16 个动作状态、7 种心情**。
+- 当前产品重点是宠物切换、场景切换、精灵图动画、宠物聊天和鼠标、触摸、
+  键盘互动。
+- 当前聊天优先通过 Vite dev/preview 代理调用 DeepSeek，调用失败或没有密钥
+  时使用本地关键词规则；浏览器端不得接触 API 密钥。
 - 当前产品不包含照片上传、自动生成宠物、3D、体素、OBJ、WebGL、AR、
   账号、云端保存、商城或可用的导出流程。
 - `apps/web/src/app/voxel/` 和 `experiments/` 中包含历史实验代码，但它们
@@ -39,11 +43,13 @@ pnpm --filter @pindou/web dev --host 127.0.0.1
 3. `docs/product/interactive-pixel-dog-feature-spec.md`
 4. `docs/product/multi-pet-frontend-design-features.md`
 5. `apps/web/src/app/pixel-dog/PixelDogStudio.tsx`
-6. `apps/web/src/app/pixel-dog/pixelDogModel.ts`
-7. `apps/web/src/app/pixel-dog/petCatalog.ts`
-8. `apps/web/src/app/pixel-dog/sceneCatalog.ts`
-9. 同目录测试和 `apps/web/src/app/App.test.tsx`
-10. 与当前任务直接相关的 API、合同或历史文件
+6. `apps/web/src/app/pixel-dog/petChatAgent.ts`
+7. `apps/web/src/app/pixel-dog/petChatModel.ts`
+8. `apps/web/src/app/pixel-dog/pixelDogModel.ts`
+9. `apps/web/src/app/pixel-dog/petCatalog.ts`
+10. `apps/web/src/app/pixel-dog/sceneCatalog.ts`
+11. 同目录测试和 `apps/web/src/app/App.test.tsx`
+12. 与当前任务直接相关的 API、合同或历史文件
 
 事实层级：
 
@@ -57,7 +63,7 @@ pnpm --filter @pindou/web dev --host 127.0.0.1
 
 | 路径 | 作用 | 修改时机 |
 | --- | --- | --- |
-| `apps/web/src/app/pixel-dog/` | 当前 2D 宠物页面、状态机和目录 | 互动、宠物、场景或状态修改 |
+| `apps/web/src/app/pixel-dog/` | 当前 2D 宠物页面、状态机、聊天模型和目录 | 互动、聊天、宠物、场景或状态修改 |
 | `apps/web/public/pixel-dog/` | 宠物基础图、精灵图、manifest 和场景图 | 明确要求修改视觉资源时 |
 | `apps/web/src/app/styles.css` | 当前页面和历史页面的共享样式 | 前端布局与视觉修改 |
 | `apps/web/src/app/router.tsx` | 路由和产品外壳 | 路由边界或入口修改 |
@@ -78,6 +84,8 @@ pnpm --filter @pindou/web dev --host 127.0.0.1
 - 新增宠物：`petCatalog.ts`、宠物资源目录、manifest、资源测试。
 - 新增场景：`sceneCatalog.ts`、场景资源、目录测试。
 - 新增互动：`pixelDogModel.ts`、`PixelDogStudio.tsx`、样式和状态机测试。
+- 修改聊天：`petChatAgent.ts`、`petChatModel.ts`、`PixelDogStudio.tsx`、
+  `vite.config.ts`、样式和对应测试。
 - API 修改：`apps/api/`、OpenAPI 快照、生成合同和迁移。
 
 ## 4. 不得静默破坏的产品合同
@@ -129,6 +137,20 @@ moving-backward
 - 一次性动作完成后返回 `idle`。
 - 新的有效输入可以唤醒宠物并重新计算等待时间。
 
+聊天心情独立于上述动作状态，定义在 `petChatModel.ts`：
+
+```text
+calm  happy  excited  curious  shy  sleepy  content
+```
+
+- DeepSeek 请求只能走 Vite dev/preview 代理；`DEEPSEEK_API_KEY` 只允许放在
+  被 Git 忽略的 `apps/web/.env.local`，不得进入客户端代码、构建产物或提交。
+- DeepSeek 不可用时必须回退本地关键词规则，不能让聊天界面报错或失效。
+- 每只宠物的对话历史相互隔离。
+- 输入框中的方向键只移动文本光标，不得触发宠物移动。
+- 发送消息会唤醒宠物并重置等待时间。
+- 关闭或刷新页面后不保留聊天内容。
+
 ### 精灵图与资源
 
 - 宠物基础图为 `128×128` PNG。
@@ -144,11 +166,12 @@ moving-backward
 
 - 鼠标点击。
 - 触摸和长按抚摸。
-- 四向移动按钮。
+- 左右移动按钮（前后移动由键盘方向键与点击场景走位承担）。
 - 四个键盘方向键。
 - 带可访问名称和当前百分比的原生尺寸滑块。
 - 原生焦点顺序和清晰焦点样式。
 - 状态与场景的可访问播报。
+- 可打开和关闭的聊天区、带名称的文本输入、发送按钮及完整回复播报。
 - 图集加载错误提示。
 - `prefers-reduced-motion: reduce` 下可用的静态或简化体验。
 
@@ -175,7 +198,18 @@ pnpm install --frozen-lockfile
 pnpm --filter @pindou/web dev --host 127.0.0.1
 ```
 
-当前首页不调用后端，因此不要为了查看 2D 页面额外启动数据库或 Redis。
+当前首页不调用仓库后端，因此不要为了查看 2D 页面额外启动数据库或 Redis。
+
+若需实测 DeepSeek 对话：
+
+```bash
+cp apps/web/.env.example apps/web/.env.local
+# 只在 apps/web/.env.local 中填写 DEEPSEEK_API_KEY
+pnpm --filter @pindou/web dev --host 127.0.0.1
+```
+
+Vite 只在开发和预览模式提供 `/deepseek-api` 代理。纯静态生产部署没有同
+路径代理时会回退本地回复；若部署方新增代理，仍必须在服务端注入密钥。
 
 ### 可选 API 基础设施
 
@@ -273,6 +307,7 @@ make redis-smoke
 - 宠物在前后边界和尺寸极值时仍在舞台内，阴影同步变化。
 - 食盆位于嘴部下方，玩具球位于头部前方。
 - 场景切换和全部互动有正确视觉反馈。
+- 对话框不遮住宠物主体，颜文字和情绪符号跟随宠物且不拦截输入。
 - 键盘焦点、状态播报和减少动态模式仍然可用。
 - 浏览器控制台没有相关 error 或 warning。
 
@@ -348,9 +383,9 @@ Pages。
 - 仓库尚未添加 `LICENSE`。
 - `docs/qa/multi-pet-scenes-interactions-qa.json` 记录的是较早提交上的浏览器
   基线，不能直接作为最新视觉版本的验收结果。
-- 最新视觉版在 `390×844` 下存在一个尚未实屏复验的评审风险：舞台的
-  `minmax(320px, 50svh)` 和上方选择区可能使主要互动按钮落到首屏下方。
-  修复或否定该问题前，必须用真实浏览器重新测量，不能只依靠静态推算。
+- 选择器弹出化和操作栏下移后，`390×844` 已用真实浏览器复测：场景
+  217–639px、宠物 289–520px 完整可见，左右移动按钮与聊天等前两行
+  动作按钮均在首屏内，仅"叫醒"所在第三行略低于首屏（可滚动到达）。
 
 如果这些边界后来发生变化，应同时更新本节及相应产品/QA 文档。
 

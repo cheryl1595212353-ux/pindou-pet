@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "date": "2026-07-28",
+  "timezone": "Asia/Shanghai",
+  "branch": "codex/pet-chat-emotions",
+  "testedBaseHead": "c9ec739eaf00ee74dfc4d0548bec8ff0195c3eb4",
+  "designCommit": "d4e55ad",
+  "workingTreeHasUncommittedChanges": true,
+  "testedUrl": "http://127.0.0.1:5173/",
+  "browserSurface": "Codex In-app Browser",
+  "scope": {
+    "petCount": 5,
+    "chatIntents": [
+      "food",
+      "play",
+      "sleep",
+      "praise",
+      "mood",
+      "scene",
+      "greeting",
+      "fallback"
+    ],
+    "moods": [
+      "calm",
+      "happy",
+      "excited",
+      "curious",
+      "shy",
+      "sleepy",
+      "content"
+    ],
+    "moodBurstLifetimeMs": 3200,
+    "inputMaxLength": 80,
+    "networkDependency": false
+  },
+  "automaticVerification": {
+    "testCommand": "pnpm --filter @pindou/web test",
+    "testFiles": 24,
+    "tests": 114,
+    "testResult": "PASS",
+    "typecheckCommand": "pnpm --filter @pindou/web typecheck",
+    "typecheckResult": "PASS",
+    "buildCommand": "pnpm --filter @pindou/web build",
+    "buildResult": "PASS",
+    "diffCheckCommand": "git diff --check",
+    "diffCheckResult": "PASS"
+  },
+  "conversation": {
+    "openAndClose": "PASS",
+    "inputAutofocus": "PASS",
+    "blankSubmitDisabled": true,
+    "enterSubmits": true,
+    "escapeCloses": true,
+    "focusReturnsToToggle": true,
+    "fullReplyLiveRegion": "polite",
+    "visibleTypewriterExcludedFromAccessibilityTree": true,
+    "arrowKeyIsolation": {
+      "before": "X 50 · Y 50",
+      "afterArrowLeftInInput": "X 50 · Y 50",
+      "result": "PASS"
+    }
+  },
+  "petVoices": [
+    {
+      "pet": "豆包",
+      "prompt": "我们一起玩吧",
+      "mood": "excited",
+      "reply": "豆包：好耶！出发，我们现在就一起玩！"
+    },
+    {
+      "pet": "金宝",
+      "prompt": "我们一起玩吧",
+      "mood": "excited",
+      "reply": "金宝：当然可以，我会陪着你。出发，我们现在就一起玩！"
+    },
+    {
+      "pet": "雪团",
+      "prompt": "我们一起玩吧",
+      "mood": "excited",
+      "reply": "雪团：先和你贴贴！出发，我们现在就一起玩！"
+    },
+    {
+      "pet": "可可",
+      "prompt": "我们一起玩吧",
+      "mood": "excited",
+      "reply": "可可：收到，我已经开始想办法啦。出发，我们现在就一起玩！"
+    },
+    {
+      "pet": "橘团",
+      "prompt": "我们一起玩吧",
+      "mood": "excited",
+      "reply": "橘团：嗯……我们慢慢聊。出发，我们现在就一起玩！"
+    }
+  ],
+  "contextGrounding": {
+    "sceneId": "camping",
+    "prompt": "这里怎么样",
+    "reply": "豆包：好耶！我正在观察星光露营，这里有好多新鲜事。",
+    "scenePreservedWhileChatting": true,
+    "positionPreservedWhileChatting": "X 51 · Y 50",
+    "moodBurstTracksPetLayer": true,
+    "componentCoverageIncludesSize115Percent": true
+  },
+  "moodFeedback": {
+    "dialogueMoodAttribute": true,
+    "dialogueEmoticon": true,
+    "externalEmoticon": true,
+    "externalTokenCount": 3,
+    "visibleImmediatelyAfterReply": true,
+    "hiddenAfter3400Ms": true,
+    "dialogueRemainsOpenAfterBurst": true
+  },
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900,
+      "documentHorizontalOverflowPx": 0,
+      "documentHeight": 900,
+      "room": {
+        "left": 358,
+        "top": 88,
+        "right": 1418,
+        "bottom": 878,
+        "width": 1060,
+        "height": 790
+      },
+      "scene": {
+        "left": 374,
+        "top": 124,
+        "right": 1402,
+        "bottom": 746,
+        "width": 1028,
+        "height": 622
+      },
+      "dialogue": {
+        "left": 392,
+        "top": 538,
+        "right": 1384,
+        "bottom": 728,
+        "width": 992,
+        "height": 190
+      },
+      "minimumButtonSize": {
+        "width": 44,
+        "height": 44
+      }
+    },
+    {
+      "name": "intermediate",
+      "width": 578,
+      "height": 863,
+      "documentHorizontalOverflowPx": 0,
+      "documentHeight": 1292,
+      "room": {
+        "left": 10,
+        "top": 44,
+        "right": 568,
+        "bottom": 939,
+        "width": 558,
+        "height": 895
+      },
+      "scene": {
+        "left": 22,
+        "top": 75,
+        "right": 556,
+        "bottom": 593,
+        "width": 534,
+        "height": 518
+      },
+      "dialogue": {
+        "left": 30,
+        "top": 424,
+        "right": 548,
+        "bottom": 585,
+        "width": 518,
+        "height": 161
+      },
+      "minimumButtonSize": {
+        "width": 44,
+        "height": 44
+      }
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844,
+      "documentHorizontalOverflowPx": 0,
+      "documentHeight": 1276,
+      "room": {
+        "left": 10,
+        "top": 35,
+        "right": 380,
+        "bottom": 918,
+        "width": 370,
+        "height": 883
+      },
+      "scene": {
+        "left": 22,
+        "top": 66,
+        "right": 368,
+        "bottom": 572,
+        "width": 346,
+        "height": 506
+      },
+      "dialogue": {
+        "left": 30,
+        "top": 403,
+        "right": 360,
+        "bottom": 564,
+        "width": 330,
+        "height": 161
+      },
+      "minimumButtonSize": {
+        "width": 44,
+        "height": 44
+      },
+      "inputFocusedAfterOpen": true
+    }
+  ],
+  "reducedMotion": {
+    "inAppBrowserCurrentPreference": false,
+    "mediaRulePresent": true,
+    "mediaRuleIncludesDialogueAndMoodEffects": true,
+    "componentTestForImmediateFullReply": "PASS",
+    "note": "The in-app browser did not expose media emulation; behavior was verified by the component test and the live same-origin CSS media rule."
+  },
+  "console": {
+    "warnings": [],
+    "errors": [],
+    "result": "PASS"
+  }
+}
