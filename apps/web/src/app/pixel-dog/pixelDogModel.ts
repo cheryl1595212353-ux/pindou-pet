@@ -40,6 +40,12 @@ export interface DogClip {
   readonly frameCount: number;
   readonly durations: readonly number[];
   readonly loop: boolean;
+  /**
+   * Frame index a looping clip rewinds to after the final frame. Clips whose
+   * opening frames are a one-time settle-in (e.g. lying down before sleep)
+   * use this to keep looping only the settled breathing frames.
+   */
+  readonly loopStart?: number;
   readonly status: string;
 }
 
@@ -82,8 +88,11 @@ export const DOG_CLIPS: Readonly<Record<PixelDogState, DogClip>> = {
   sleeping: {
     row: 5,
     frameCount: 8,
-    durations: [140, 140, 140, 140, 140, 140, 140, 240],
+    durations: [150, 150, 170, 190, 240, 300, 860, 940],
     loop: true,
+    // Frames 0-5 are the one-time lie-down; frames 6-7 are the settled
+    // breathing loop, so an asleep pet never replays the lie-down.
+    loopStart: 6,
     status: "睡着了",
   },
   waiting: {
@@ -143,16 +152,19 @@ export const DOG_CLIPS: Readonly<Record<PixelDogState, DogClip>> = {
     status: "正在摆姿势拍照",
   },
   "moving-forward": {
-    row: 0,
-    frameCount: 6,
-    durations: [180, 110, 110, 160, 160, 220],
+    // The nine-row atlas has no dedicated front-view walk frames, so reuse
+    // the right-facing run: depth moves animate legs instead of gliding.
+    row: 1,
+    frameCount: 8,
+    durations: [120, 120, 120, 120, 120, 120, 120, 220],
     loop: true,
     status: "正在向前走",
   },
   "moving-backward": {
-    row: 0,
-    frameCount: 6,
-    durations: [180, 110, 110, 160, 160, 220],
+    // Same trade-off, mirrored: reuse the left-facing run.
+    row: 2,
+    frameCount: 8,
+    durations: [120, 120, 120, 120, 120, 120, 120, 220],
     loop: true,
     status: "正在向后走",
   },

@@ -35,10 +35,10 @@ describe("pixel dog model", () => {
 
   it("maps every product state onto the fixed nine-row pet atlas", () => {
     expect(Object.values(DOG_CLIPS).map((clip) => clip.row)).toEqual([
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 4, 8, 6, 3, 3, 0, 0,
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 4, 8, 6, 3, 3, 1, 2,
     ]);
     expect(Object.values(DOG_CLIPS).map((clip) => clip.frameCount)).toEqual([
-      6, 8, 8, 4, 5, 8, 6, 6, 6, 5, 6, 6, 4, 4, 6, 6,
+      6, 8, 8, 4, 5, 8, 6, 6, 6, 5, 6, 6, 4, 4, 8, 8,
     ]);
     expect([CELL_WIDTH, CELL_HEIGHT, ATLAS_WIDTH, ATLAS_HEIGHT]).toEqual([
       192, 208, 1536, 1872,
@@ -147,6 +147,22 @@ describe("pixel dog model", () => {
     expect(getDepthScale(MIN_STAGE_DEPTH)).toBeCloseTo(0.9);
     expect(getDepthScale(50)).toBeCloseTo(0.99);
     expect(getDepthScale(MAX_STAGE_DEPTH)).toBeCloseTo(1.08);
+  });
+
+  it("loops only the settled breathing frames once a pet is asleep", () => {
+    const sleeping = DOG_CLIPS.sleeping;
+    expect(sleeping.loop).toBe(true);
+    expect(sleeping.frameCount).toBe(8);
+    expect(sleeping.loopStart).toBe(6);
+    expect(sleeping.durations).toEqual([150, 150, 170, 190, 240, 300, 860, 940]);
+    // The lie-down plays once; only the two slow breathing frames rewind.
+    expect(sleeping.durations[6]).toBeGreaterThanOrEqual(800);
+    expect(sleeping.durations[7]).toBeGreaterThanOrEqual(800);
+    for (const [state, clip] of Object.entries(DOG_CLIPS)) {
+      if (state !== "sleeping") {
+        expect(clip.loopStart).toBeUndefined();
+      }
+    }
   });
 
   it("slows only one-shot interactions enough to read them", () => {
